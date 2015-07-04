@@ -23,21 +23,16 @@ void reader(){
 	while(1){
 
 	int count = read(0, &readed,sizeof(readed));
-	if(count<0){
-		endfun();
-	}else if(count==0){ // ended by erlang
+	if(count<=0){
 		endfun();
 	}
 	// readed array contains one byte for msg length and rest for content
 	strcpy(echo,readed);
 
 
-		 int count_uart= write(uart0_filestream, &echo[0], count);		//Filestream, bytes to write, number of bytes to write
-		if (count_uart < 0)
+	 int count_uart= write(uart0_filestream, &echo[0], count);		//Filestream, bytes to write, number of bytes to write
+		if (count_uart <= 0)
 		{
-			printf("UART TX error\n");
-		endfun();
-		}else if( count_uart ==0){
 		endfun();
 		}
 	
@@ -92,6 +87,7 @@ int main(int argc, char * argv[]){
 	//
 	//	O_NOCTTY - When set and path identifies a terminal device, open() shall not cause the terminal device to become the controlling terminal for the process.
 	uart0_filestream = open("/dev/ttyAMA0", O_RDWR | O_NOCTTY | O_NDELAY);		//Open in non blocking read/write mode
+
 	if (uart0_filestream == -1)
 	{
 		//ERROR - CAN'T OPEN SERIAL PORT
@@ -118,25 +114,19 @@ int main(int argc, char * argv[]){
 		unsigned char rx_buffer[256];
 		unsigned char rx_echo[256];
 		int rx_length = read(uart0_filestream, (void*)rx_buffer, sizeof(rx_buffer));		//Filestream, buffer to store in, number of bytes to read (max)
-		if (rx_length < 0)
+		if (rx_length <= 0)
 		{
-			//An error occured (will occur if there are no bytes)
-		}
-		else if (rx_length == 0)
-		{
-			//No data waiting
-		endfun();
+			//An error occured (will occur if there are no bytes) or No data waiting
+            endfun();
 		}
 		else
 		{
-			// strcpy(rx_echo,rx_buffer);
-			// //Bytes received
-			// // rx_echo[0] = rx_length;
+
 			int count_erl;
 			strcpy(rx_echo,rx_buffer);
 			count_erl = write(1,rx_echo,rx_length);
 			if(count_erl <=0){
-		endfun();
+				endfun();
 			}
 		}
 		

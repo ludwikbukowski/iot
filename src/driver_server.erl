@@ -49,7 +49,7 @@ lists:foreach(fun(X) -> port_close(X)  end,Data),
 %% Receive Data from Driver
 handle_info({'EXIT',Pid, Reason},Data) when is_pid(Pid) ->               % usual termination (eg by supervisor)
   gen_server:call(var_server,{msg,{normal_termination,Reason}}),
-  exit(whereis(driver_server),kill),
+  exit(whereis(driver_server),kill),                                     % TODO dont think it is good way to terminate process
   {noreply,Data};
 handle_info({'EXIT',Port, Reason},Data) when is_port(Port) ->            %  termination by external drivers death
   gen_server:call(var_server,{msg,{driver_termination,Reason}}),
