@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/iot.iml" filepath="$PROJECT_DIR$/iot.iml" />
+      <module fileurl="file://$PROJECT_DIR$/_build/default/lib/iot/iot.iml" filepath="$PROJECT_DIR$/_build/default/lib/iot/iot.iml" />
+      <module fileurl="file://$PROJECT_DIR$/_build/default/rel/iot/lib/iot-0.1.0/iot.iml" filepath="$PROJECT_DIR$/_build/default/rel/iot/lib/iot-0.1.0/iot.iml" />
+    </modules>
+  </component>
+</project>
