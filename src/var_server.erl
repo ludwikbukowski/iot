@@ -10,7 +10,7 @@
 -author("ludwikbukowski").
 -behaviour(gen_server).
 %% API
--export([start_link/1, init/1, handle_call/3, myfunc/0, terminate/2, handle_info/2, code_change/3, openport/0, restartport/1, handle_cast/2]).
+-export([start_link/1, init/1, handle_call/3, myfunc/0, terminate/2, handle_info/2, code_change/3, openport/0, restartport/1, handle_cast/2, handle_call/3, adddata/1]).
 
 start_link(InitialValue) ->
   gen_server:start_link(
@@ -27,11 +27,12 @@ init(_) ->
 myfunc()->gen_server:call(var_server,myfunc).
 openport()->gen_server:call(var_server,openport).
 restartport(Id)->gen_server:cast(var_server,{restartport,Id}).
+adddata(Msg)->gen_server:call(var_server,{msg,Msg}).
 
 
 %% Handle calls
 handle_call(myfunc,From,Data)->
-  {reply,"Server's task is to provide console communication interface with node.",[]};
+  {reply,"Variable Server's task is to provide console communication interface with node and to restore received data from sensors.",[]};
 
 handle_call({msg,Msg},From,Data)->
   {reply,{ok,Msg},Data ++ [Msg]};

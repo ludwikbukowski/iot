@@ -8,10 +8,11 @@
 %%%-------------------------------------------------------------------
 -module(driver_server).
 -author("ludwikbukowski").
--define(FILE_C,"./bin/driver").
+-define(FILE_C,code:priv_dir(iot)++"/driver").
+-define(FILE_MOCK,code:priv_dir(iot)++"/driver_mock").
 -define(PACKET,{packet,1}).
 %% API
--export([start_link/1, init/1, handle_info/2, terminate/2, code_change/3, handle_cast/2, closeport/0, senddata/1]).
+-export([start_link/1, init/1, handle_info/2, terminate/2, code_change/3, closeport/0, senddata/1, myfunc/0, handle_call/3]).
 
 %% gen_server to provide communication with C driver
 
@@ -32,31 +33,35 @@ init(_) ->
   {ok, [Port]}.
 
 % API
-closeport()->gen_server:cast(driver_server,closeport).
+closeport()->gen_server:call(driver_server,closeport).
 senddata(Msg)->gen_server:cast(driver_server,{senddata,Msg}).
+myfunc()->gen_server:call(driver_server,myfunc).
 
 %% Handle Calls and casts
-handle_cast({senddata,Msg},Data)->
+handle_call(myfunc,From,Data)->
+  {reply,"Driver Server's task is to maintain communication with Driver C and to pass received data to Variable Server." ,Data};
+
+handle_call({senddata,Msg},From,Data)->
   lists:foreach(fun(X)->port_command(X,Msg) end,Data),
-  {noreply,Data};
+  {reply,ok,Data};
 
 
-handle_cast(closeport,Data)->
+handle_call(closeport,From,Data)->
 lists:foreach(fun(X) -> port_close(X)  end,Data),
-{noreply,[]}
-.
+{reply,[],[]}.
 
 %% Receive Data from Driver
 handle_info({'EXIT',Pid, Reason},Data) when is_pid(Pid) ->               % usual termination (eg by supervisor)
-  gen_server:call(var_server,{msg,{normal_termination,Reason}}),
+  var_server:adddata({msg,{normal_termination,Reason}}),
   exit(whereis(driver_server),kill),                                     % TODO dont think it is good way to terminate process
   {noreply,Data};
 handle_info({'EXIT',Port, Reason},Data) when is_port(Port) ->            %  termination by external drivers death
-  gen_server:call(var_server,{msg,{driver_termination,Reason}}),
+  var_server:adddata({msg,{driver_termination,Reason}}),
   exit(whereis(driver_server),kill),
   {noreply,Data};
-handle_info(Msg,Data)  ->                                                % received data from sensor is sent to var_server
-  {ok,Msg} = gen_server:call(var_server,{msg,Msg}),
+handle_info(Msg,Data)  ->
+  % received data from sensor is sent to var_server
+  {ok,Msg} = var_server:adddata(Msg),
   {noreply,Data}.
 
 

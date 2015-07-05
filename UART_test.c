@@ -37,7 +37,6 @@ void reader(){
 		}
 	
 }
-	
 }
 
 //SIGPIPE is send when reading end of the pipe gets closed, hence because Erlang's process termination.
@@ -116,8 +115,8 @@ int main(int argc, char * argv[]){
 		int rx_length = read(uart0_filestream, (void*)rx_buffer, sizeof(rx_buffer));		//Filestream, buffer to store in, number of bytes to read (max)
 		if (rx_length <= 0)
 		{
-			//An error occured (will occur if there are no bytes) or No data waiting
-            endfun();
+			//No data waiting(no-blocking read operatin)
+            
 		}
 		else
 		{
