@@ -82,7 +82,7 @@ int main(int argc, char * argv[]){
 	//											immediately with a failure status if the output can't be written immediately.
 	//
 	//	O_NOCTTY - When set and path identifies a terminal device, open() shall not cause the terminal device to become the controlling terminal for the process.
-	uart_fd = open("/dev/ttyAMA0", O_RDWR | O_NOCTTY );		//Open in non blocking read/write mode
+	uart_fd = open("/dev/ttyAMA0", O_RDWR | O_NOCTTY  );		//Open in non blocking read/write mode
 
 	if (uart_fd == -1)
 	{
@@ -117,7 +117,7 @@ int main(int argc, char * argv[]){
 			int count_erl;
 			strcpy(rx_echo+1,rx_buffer);
 			rx_echo[0] = 5;
-			count_erl = write(erl_write,rx_echo,rx_length);
+			count_erl = write(erl_write,rx_echo,rx_length+1);
 			if(count_erl <=0){
 				close_driver();
 			}
