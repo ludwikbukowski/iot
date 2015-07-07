@@ -6,27 +6,31 @@
 %%% @end
 %%% Created : 07. Jul 2015 10:03 AM
 %%%-------------------------------------------------------------------
--module(loop).
+-module(demeter_server).
 -author("ludwikbukowski").
 -behaviour(gen_server).
 %% API
--export([start_link/1, init/1, browse/0, handle_call/3, looper/0]).
+-export([start_link/1, init/1, handle_call/3, myfunc/0]).
+
 start_link(InitialValue) ->
   gen_server:start_link(
-    {local,var_server},
-    loop,
+    {local,demeter_server},
+    demeter_server,
     [InitialValue], []).
+
 init(InitialValue) ->
   {ok, InitialValue}.
-browse()->gen_server:call(var_server,ibrowse).
 
-handle_call(ibrowse,From,Data)->
-  spawn(?MODULE,looper,[]),
-  {reply,nothing,Data}.
-looper()->  ibrowse:send_req("https://www.google.pl", [], get),
-  10+10,
-  application:which_applications(),
-  timer:sleep(1000),looper().
+%% Calls
+myfunc()->gen_server:call(demeter_server,myfunc).
+
+
+
+%% Handle calls
+handle_call(myfunc,From,Data)->
+  {reply,"Demeter Server's task is to provide console communication interface with node.",Data}.
+
+
 
 
 

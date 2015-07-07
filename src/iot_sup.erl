@@ -20,7 +20,7 @@
 %%====================================================================
 
 start_link() ->
-    supervisor:start_link({local, var_supervisor}, ?MODULE, []).
+    supervisor:start_link({local, zeus_supervisor}, ?MODULE, []).
 
 %%====================================================================
 %% Supervisor callbacks
@@ -28,7 +28,7 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_one, 2, 2000}, [{var_server,{loop,start_link,[[]]},permanent,5000,worker,[loop]}]} }.
+    {ok, { {one_for_one, 2, 2000}, [{demeter_server,{demeter_server,start_link,[[]]},permanent,5000,worker,[demeter_server]}]} }.
 
 
 

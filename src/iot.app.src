@@ -5,7 +5,7 @@
   {mod, {'iot_app', []}},
   {applications,
    [kernel,
-    stdlib,ibrowse,ssl
+    stdlib
 
    ]},
   {env,[]},
