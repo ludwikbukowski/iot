@@ -1,0 +1,17 @@
+ {application, 'iot',
+ [{description, "An OTP application"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, {'iot_app', []}},
+  {applications,
+   [kernel,
+    stdlib,ibrowse,ssl
+
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {contributors, []},
+  {licenses, []},
+  {links, []}
+ ]}.
