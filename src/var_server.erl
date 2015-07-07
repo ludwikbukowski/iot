@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 07. Jul 2015 10:03 AM
 %%%-------------------------------------------------------------------
--module(hermes_server).
+-module(var_server).
 -author("ludwikbukowski").
 -behaviour(gen_server).
 %% API
@@ -14,21 +14,21 @@
 
 start_link(InitialValue) ->
   gen_server:start_link(
-    {local,hermes_server},
-    hermes_server,
+    {local,var_server},
+    var_server,
     [InitialValue], []).
 
 init(InitialValue) ->
   {ok, InitialValue}.
 
 %% Calls
-myfunc()->gen_server:call(hermes_server,myfunc).
+myfunc()->gen_server:call(var_server,myfunc).
 
 
 
 %% Handle calls
 handle_call(myfunc,From,Data)->
-  {reply,"Hermes Server's task is to provide console communication interface with node.",Data};
+  {reply,"Server's task is to provide console communication interface with node.",Data};
 handle_call(_,From,Data)->
   {reply,From,Data}.
 

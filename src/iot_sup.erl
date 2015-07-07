@@ -30,7 +30,7 @@ start_link() ->
 init([]) ->
     {ok, { {one_for_one, 2, 2000},
         [
-            {hermes_server,{hermes_server,start_link,[[]]},permanent,5000,worker,[hermes_server]}
+            {var_server,{var_server,start_link,[[]]},permanent,5000,worker,[var_server]}
             ,{my_error_logger,{my_error_logger,start_link,[[]]},permanent,5000,worker,[my_error_logger]}
         ]
          }
