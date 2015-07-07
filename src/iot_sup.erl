@@ -28,7 +28,13 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_one, 2, 2000}, [{demeter_server,{demeter_server,start_link,[[]]},permanent,5000,worker,[demeter_server]}]} }.
+    {ok, { {one_for_one, 2, 2000},
+        [
+            {hermes_server,{hermes_server,start_link,[[]]},permanent,5000,worker,[hermes_server]}
+            ,{my_error_logger,{my_error_logger,start_link,[[]]},permanent,5000,worker,[my_error_logger]}
+        ]
+         }
+    }.
 
 
 
