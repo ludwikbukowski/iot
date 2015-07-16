@@ -22,7 +22,7 @@ Create Release
 
 Example Usage
 ----
- (You have to have UART Port (and loopbacked)
+You should have UART Port connected (and loopbacked)
 if not change line in iot.app.src " {env,[{mocked,true}]} " to  {env,[{mocked,false}]}
 
     $ sh start.sh
