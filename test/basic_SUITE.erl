@@ -112,9 +112,6 @@ close_port_test(_)->
   [] = ?DRIVER_S:closeport().
 
 
-
-
-
 error_receive_test1(_) ->                                                %% TODO Test crashes
   meck:new(?VAR_S,[unstick,passthrough]),
   meck:new(?DRIVER_S ,[unstick,passthrough]),

@@ -9,7 +9,8 @@
 -module(var_server).
 -author("ludwikbukowski").
 -behaviour(gen_server).
--define(FILE_C,code:priv_dir(iot)++"/driver").
+%-define(FILE_C,code:priv_dir(iot)++"/driver_mock").
+-define(FILE_C(),case application:get_env(iot,mocked) of {ok,true} -> code:priv_dir(iot)++"/driver_mock"; _->code:priv_dir(iot)++"/driver" end).
 %% API
 -export([start_link/1, init/1, handle_call/3, myfunc/0, terminate/2, handle_info/2, code_change/3, openport/0, restartport/1, handle_cast/2, adddata/1, getdata/0]).
 
@@ -26,7 +27,7 @@ init(_) ->
 
 %% Api
 myfunc()->gen_server:call(var_server,myfunc).
-openport()->gen_server:call(var_server,{openport,?FILE_C}).
+openport()->gen_server:call(var_server,{openport,?FILE_C()}).
 restartport(Id)->gen_server:cast(var_server,{restartport,Id}).
 adddata(Msg)->gen_server:call(var_server,{msg,Msg}).
 getdata()->gen_server:call(var_server,getdata).

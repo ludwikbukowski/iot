@@ -8,7 +8,7 @@
     kernel,
     stdlib
    ]},
-  {env,[]},
+  {env,[{mocked,true}]},
   {modules, []},
 
   {contributors, []},
