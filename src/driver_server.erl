@@ -42,17 +42,17 @@ myfunc()->gen_server:call(driver_server,myfunc).
 
 
 %% Handle Calls and casts
-handle_call(myfunc,From,Data)->
+handle_call(myfunc,_,Data)->
   {reply,"Driver Server's task is to maintain communication with Driver C and to pass received data to Variable Server." ,Data};
 
-handle_call({senddata,Msg},From,Data)->
+handle_call({senddata,Msg},_,Data)->
   lists:foreach(fun(X)->port_command(X,Msg) end,Data),
   {reply,ok,Data};
 
-handle_call(getport,From,Data)->
+handle_call(getport,_,Data)->
   {reply,Data,Data};
 
-handle_call(closeport,From,Data)->
+handle_call(closeport,_,Data)->
 lists:foreach(fun(X) -> port_close(X)  end,Data),
 {reply,[],[]}.
 
@@ -72,11 +72,11 @@ handle_info(Msg,Data)  ->
 
 
 %% Other
-terminate(Reason, Data) ->
+terminate(_, _) ->
 ok.
 
 
-code_change(OldVsn, State, Extra) ->
+code_change(_, _, _) ->
   error(not_implemented).
 
 

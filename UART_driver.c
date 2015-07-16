@@ -7,49 +7,67 @@
 #include <signal.h>
 #include <sys/ioctl.h>
 #include <pthread.h>
- 
+#define MSG_SIZE 100
+
+ //C 'Driver' to handle serial communication with UART.
+
+
+
 int packet_n = 0;
 int line_n = 0;
 pthread_t tid;
 int packet_flag = 0;
-int uart0_filestream = -1;
-int endfun(){
-	close(uart0_filestream);
+
+// File descriptors
+int uart_fd = -1;
+int erl_read = 0;
+int erl_write = 1;
+
+
+
+
+//SIGPIPE is send when reading end of the pipe gets closed, hence because Erlang's process termination.
+int catch(int sig){
+	close(uart_fd);
+	perror("Closing with reason:");
 	exit(1);
 }
-void reader(){
-	char readed[100];
-	char echo[120];
+
+// Termination Function
+void close_driver(){
+	close(uart_fd);
+	perror("Closing with reason:");
+	exit(1);
+}
+
+// pThread which reads packets from erlang
+void from_erlang_pthread(){
+	char readed[MSG_SIZE];
+	char echo[MSG_SIZE];
 	while(1){
 
-	int count = read(0, &readed,sizeof(readed));
+	int count = read(erl_read, &readed,sizeof(readed));
 	if(count<=0){
-		endfun();
+		close_driver();
 	}
 	// readed array contains one byte for msg length and rest for content
 	strcpy(echo,readed);
 
 
-	 int count_uart= write(uart0_filestream, &echo[0], count);		//Filestream, bytes to write, number of bytes to write
+	 int count_uart= write(uart_fd, &echo[0], count);		//Filestream, bytes to write, number of bytes to write
 		if (count_uart <= 0)
 		{
-		endfun();
+		close_driver();
 		}
 	
 }
 }
 
-//SIGPIPE is send when reading end of the pipe gets closed, hence because Erlang's process termination.
-int catch(int sig){
-	close(uart0_filestream);
-	exit(1);
-
-}
 
 int main(int argc, char * argv[]){
 
  struct sigaction sig;
-  /* Set up the structure to specify the new action. */
+  // Set up SIGPIPE handler
   sig.sa_handler = catch;
   sigemptyset (&sig.sa_mask);
   sig.sa_flags = 0;
@@ -85,9 +103,9 @@ int main(int argc, char * argv[]){
 	//											immediately with a failure status if the output can't be written immediately.
 	//
 	//	O_NOCTTY - When set and path identifies a terminal device, open() shall not cause the terminal device to become the controlling terminal for the process.
-	uart0_filestream = open("/dev/ttyAMA0", O_RDWR | O_NOCTTY | O_NDELAY);		//Open in non blocking read/write mode
+	uart_fd = open("/dev/ttyAMA0", O_RDWR | O_NOCTTY | O_NDELAY);		//Open in non blocking read/write mode
 
-	if (uart0_filestream == -1)
+	if (uart_fd == -1)
 	{
 		//ERROR - CAN'T OPEN SERIAL PORT
 		printf("Error - Unable to open UART.  Ensure it is not in use by another application\n");
@@ -95,37 +113,37 @@ int main(int argc, char * argv[]){
 	}
 	// Set all options to connection
 	struct termios options;
-	tcgetattr(uart0_filestream, &options);
+	tcgetattr(uart_fd, &options);
 	options.c_cflag = B9600 | CS8 | CLOCAL | CREAD;		//<Set baud rate
 	options.c_iflag = IGNPAR;
 	options.c_oflag = 0;
 	options.c_lflag = 0;
-	tcflush(uart0_filestream, TCIFLUSH);
-	tcsetattr(uart0_filestream, TCSANOW, &options);
+	tcflush(uart_fd, TCIFLUSH);
+	tcsetattr(uart_fd, TCSANOW, &options);
 
 
 
-	if(pthread_create(&tid,NULL,&reader,NULL)==-1){
-		endfun();
+	if(pthread_create(&tid,NULL,&from_erlang_pthread,NULL)==-1){
+		close_driver();
 	}
+
 	while(1){
 
-		unsigned char rx_buffer[256];
-		unsigned char rx_echo[256];
-		int rx_length = read(uart0_filestream, (void*)rx_buffer, sizeof(rx_buffer));		//Filestream, buffer to store in, number of bytes to read (max)
+		unsigned char rx_buffer[MSG_SIZE];
+		unsigned char rx_echo[MSG_SIZE];
+		int rx_length = read(uart_fd, (void*)rx_buffer, sizeof(rx_buffer));		//Filestream, buffer to store in, number of bytes to read (max)
 		if (rx_length <= 0)
 		{
-			//No data waiting(no-blocking read operatin)
+			//No data waiting (no-blocking read operation)
             
 		}
 		else
 		{
-
 			int count_erl;
 			strcpy(rx_echo,rx_buffer);
-			count_erl = write(1,rx_echo,rx_length);
+			count_erl = write(erl_write,rx_echo,rx_length);
 			if(count_erl <=0){
-				endfun();
+				close_driver();
 			}
 		}
 		

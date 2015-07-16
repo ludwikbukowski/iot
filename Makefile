@@ -1,4 +1,4 @@
-UART_FILE=UART_test.c
+UART_FILE=UART_driver.c
 UART_MOCK=UART_mock.c
 UART_OBJ=./priv/driver
 UART_OBJ_MOCK=./priv/driver_mock

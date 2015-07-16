@@ -10,7 +10,7 @@
 -author("ludwikbukowski").
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
--define(FILE_C,code:priv_dir(iot)++"/driver_mock").
+-define(FILE_C,code:priv_dir(iot)++"/driver").
 -define(FILE_MOCK,code:priv_dir(iot)++"/driver_mock").
 -define(DRIVER_S,driver_server).
 -define(VAR_S,var_server).
@@ -54,7 +54,7 @@ simple_test(_)->
   true = is_pid(whereis(?VAR_S)).
 
 %% Driver_server side
-check_port_test(Config)->
+check_port_test(_)->
   List = ?DRIVER_S:getport(),
   1 = length(List),
   [Port] = List,
@@ -72,7 +72,6 @@ driver_receive_test(_) ->                                                   %% R
 %% Var Server side
 var_receive_test(_)->                                                       %% Receiving data from var server
   ?VAR_S:adddata({some_port,{data,<<"Hi there!">>}}),
-  [] =/= ?VAR_S:getdata(),
   [{some_port,{data,<<"Hi there!">>}}] = ?VAR_S:getdata().
 
 %% Mixed
@@ -109,14 +108,14 @@ whole_echo_test(_)->                                                         %% 
   meck:unload(?DRIVER_S).
 
 
-close_port_test(Config)->
+close_port_test(_)->
   [] = ?DRIVER_S:closeport().
 
 
 
 
 
-error_receive_test1(Config) ->                                                %% TODO Test crashes
+error_receive_test1(_) ->                                                %% TODO Test crashes
   meck:new(?VAR_S,[unstick,passthrough]),
   meck:new(?DRIVER_S ,[unstick,passthrough]),
   meck:expect(?VAR_S,adddata,fun(Msg)->{ok,Msg} end),
