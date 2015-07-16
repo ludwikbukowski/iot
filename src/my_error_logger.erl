@@ -11,6 +11,9 @@
 -behavoiur(gen_event).
 
 
+% Right now its now very useful, I was thinking to use it
+% as an error but whole event manager could be removed.
+
 %% API
 -export([start_link/1, init/0, log_error/1]).
 

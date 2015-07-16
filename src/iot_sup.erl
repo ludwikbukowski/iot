@@ -31,7 +31,7 @@ init([]) ->
     {ok, { {one_for_one, 2, 2000},
         [
             {var_server,{var_server,start_link,[[]]},permanent,5000,worker,[var_server]}
-            ,{my_error_logger,{my_error_logger,start_link,[[]]},permanent,5000,worker,[my_error_logger]}
+            ,{my_error_logger,{my_error_logger,start_link,[[]]},permanent,5000,worker,[my_error_logger]}      % Its more excercise than useful module
           %  ,{connector_child,{connector_child,start_link,[]},permanent,5000,worker,[connector_child]})      Sensor's child looks like this
         ]
          }
