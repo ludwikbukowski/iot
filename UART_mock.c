@@ -12,14 +12,12 @@ int packet_n = 0;
 int line_n = 0;
 int packet_flag = 0;
 int endfun(){
-	close(uart0_filestream);
 	exit(1);
 }
 
 
 //SIGPIPE is send when reading end of the pipe gets closed, hence because Erlang's process termination.
 int catch(int sig){
-	close(uart0_filestream);
 	exit(1);
 
 }
@@ -54,10 +52,12 @@ int main(int argc, char * argv[]){
 		unsigned char rx_buffer[256];
 		unsigned char rx_echo[256];
 		int rx_length = read(0, (void*)rx_buffer, sizeof(rx_buffer));		//Filestream, buffer to store in, number of bytes to read (max)
-		if (rx_length <= 0)
+		if (rx_length < 0)
 		{
-			//No data waiting(no-blocking read operatin)
+			exit(1);
             
+		}else if(rx_length==0){
+		exit(1);
 		}
 		else
 		{

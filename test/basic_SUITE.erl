@@ -10,19 +10,21 @@
 -author("ludwikbukowski").
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
--define(FILE_C,code:priv_dir(iot)++"/driver").
+-define(FILE_C,code:priv_dir(iot)++"/driver_mock").
 -define(FILE_MOCK,code:priv_dir(iot)++"/driver_mock").
 -define(DRIVER_S,driver_server).
 -define(VAR_S,var_server).
 %% API
--export([all/0, simple_test/1, init_per_suite/1, end_per_suite/1, groups/0, init_per_group/2, end_per_group/2, pass_data_test/1, close_port_test/1]).
+-export([all/0, simple_test/1, init_per_suite/1, end_per_suite/1, groups/0, init_per_group/2, end_per_group/2, driver_receive_test/1, close_port_test/1, var_receive_test/1,
+  pass_data_test/1, check_port_test/1, error_receive_test1/1, driver_send_test1/1, driver_send_test2/1, whole_echo_test/1]).
 
-groups()->[{driverServer,[sequence],[pass_data_test,close_port_test]}].
+groups()->[{communication,[sequence],[check_port_test,driver_receive_test,var_receive_test,pass_data_test,
+  driver_send_test1,driver_send_test2,whole_echo_test,close_port_test]}].
 
-all()->[simple_test,{group,driverServer}].
+all()->[simple_test,{group,communication}].
 
 
-%% Tests
+%% Init
 init_per_suite(Config)->
   ok = application:start(meck),
   ok = application:start(iot),
@@ -32,25 +34,80 @@ end_per_suite(_)->
   ok = application:stop(iot),
   ok = application:stop(meck).
 
-simple_test(_)->
-  true = is_pid(whereis(zeus_supervisor)),
-  true = is_pid(whereis(var_server)).
 
-init_per_group(driverServer,Config)->
+init_per_group(communication,Config)->
+  meck:new(?VAR_S,[unstick,passthrough]),
+  meck:expect(?VAR_S,openport,fun()->gen_server:call(var_server,{openport,?FILE_MOCK}) end),
   ?VAR_S:openport(),
-  meck:new(?DRIVER_S,[passthrough]),
-  meck:expect(?DRIVER_S,init,fun(Init)->{ok,[fake_port]} end),
- ?DRIVER_S:start_link([]),
+  meck:unload(?VAR_S),
   Config.
 
-end_per_group(driverServer,_)->                                               %%TODO what about killing started driver_server?
+end_per_group(communication,_)->
+  ?DRIVER_S:closeport(),
   ok.
 
 
-pass_data_test(Config) ->
+
+%% Tests
+simple_test(_)->
+  true = is_pid(whereis(zeus_supervisor)),
+  true = is_pid(whereis(?VAR_S)).
+
+%% Driver_server side
+check_port_test(Config)->
+  List = ?DRIVER_S:getport(),
+  1 = length(List),
+  [Port] = List,
+  true = is_port(Port).
+
+driver_receive_test(_) ->                                                   %% Receive data from fake driver
   meck:new(?VAR_S,[unstick,passthrough]),
-  meck:expect(?VAR_S,adddata,fun(Msg)->{ok,Msg} end)
-  , ?DRIVER_S ! {some_port,{data,<<"Hi there!">>}}.
+  meck:new(?DRIVER_S,[unstick,passthrough]),
+  meck:expect(?VAR_S,adddata,fun(Msg)->{ok,Msg} end),                       %% Mock Var_server response
+  ?DRIVER_S ! {some_port,{data,<<"Hej!">>}},
+  meck:wait(?DRIVER_S,handle_info,['_','_'],5000),
+  meck:unload(?DRIVER_S),
+  meck:unload(?VAR_S).
+
+%% Var Server side
+var_receive_test(_)->                                                       %% Receiving data from var server
+  ?VAR_S:adddata({some_port,{data,<<"Hi there!">>}}),
+  [] =/= ?VAR_S:getdata(),
+  [{some_port,{data,<<"Hi there!">>}}] = ?VAR_S:getdata().
+
+%% Mixed
+pass_data_test(_)->                                                         %% Passing data between driver and var server
+  meck:new(?DRIVER_S,[unstick,passthrough]),
+  ?DRIVER_S ! {some_port,{data,<<"Hello my friend!">>}},
+  meck:wait(?DRIVER_S,handle_info,['_','_'],5000),
+  [{some_port,{data,<<"Hi there!">>}},
+    {some_port,{data,<<"Hello my friend!">>}}] = ?VAR_S:getdata(),          %% There should be twu messages in Var server
+  meck:unload(?DRIVER_S).
+
+
+driver_send_test1(_)->                                                      %% Sending data to mocked driver (without handling answer)
+  meck:new(?DRIVER_S,[unstick,passthrough]),
+  meck:expect(?DRIVER_S,handle_info,fun(_,Arg2)->{noreply,Arg2} end),
+  ok = ?DRIVER_S:senddata("Some funny stuff."),
+  meck:wait(?DRIVER_S,handle_info,['_','_'],5000),
+  meck:unload(?DRIVER_S).
+
+driver_send_test2(_)->                                                       %% Sending data to movked driver (without passing to var server)
+  meck:new(?VAR_S,[unstick,passthrough]),
+  meck:new(?DRIVER_S,[unstick,passthrough]),
+  meck:expect(?VAR_S,adddata,fun(Msg)->{ok,Msg} end),
+  ?DRIVER_S:senddata("Some well-known movie quote."),
+  meck:wait(?DRIVER_S,handle_info,['_','_'],5000),
+  meck:unload(?DRIVER_S),
+  meck:unload(?VAR_S).
+
+whole_echo_test(_)->                                                         %% Send data to driver, get answer and pass to var server
+  meck:new(?DRIVER_S,[unstick,passthrough]),
+  ?DRIVER_S:senddata("Rolling Stones roxs"),
+  meck:wait(?DRIVER_S,handle_info,['_','_'],5000),
+  [_,_,{_,{data,<<"Rolling Stones roxs">>}}] = var_server:getdata(),
+  meck:unload(?DRIVER_S).
+
 
 close_port_test(Config)->
   [] = ?DRIVER_S:closeport().
@@ -59,11 +116,13 @@ close_port_test(Config)->
 
 
 
-%error_receive_test1(Config) ->                                                %% TODO Test crashes
- % meck:new(?VAR_S,[unstick,passthrough]),
- % meck:expect(?VAR_S,adddata,fun(Msg)->{ok,Msg} end),
- % Port = open_port({spawn_executable,?FILE_C},[]),                            %% Just for mocking Port
- % ?DRIVER_S ! {'EXIT',Port, normal}.
+error_receive_test1(Config) ->                                                %% TODO Test crashes
+  meck:new(?VAR_S,[unstick,passthrough]),
+  meck:new(?DRIVER_S ,[unstick,passthrough]),
+  meck:expect(?VAR_S,adddata,fun(Msg)->{ok,Msg} end),
+  ?DRIVER_S ! {'EXIT',some_port, normal},
+  meck:wait(?DRIVER_S,handle_info,['_','_'],5000),
+  meck:unload(?VAR_S).
 
 
 
