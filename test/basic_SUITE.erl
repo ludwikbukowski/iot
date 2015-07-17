@@ -10,13 +10,15 @@
 -author("ludwikbukowski").
 -include_lib("common_test/include/ct.hrl").
 -include_lib("eunit/include/eunit.hrl").
+
+
 -define(FILE_C,code:priv_dir(iot)++"/driver").
 -define(FILE_MOCK,code:priv_dir(iot)++"/driver_mock").
 -define(DRIVER_S,driver_server).
 -define(VAR_S,var_server).
 %% API
 -export([all/0, simple_test/1, init_per_suite/1, end_per_suite/1, groups/0, init_per_group/2, end_per_group/2, driver_receive_test/1, close_port_test/1, var_receive_test/1,
-  pass_data_test/1, check_port_test/1, error_receive_test1/1, driver_send_test1/1, driver_send_test2/1, whole_echo_test/1]).
+  pass_data_test/1, check_port_test/1, error_receive_test1/1, driver_send_test1/1, driver_send_test2/1, whole_echo_test/1, prop_lists_delete/0]).
 
 groups()->[{communication,[sequence],[check_port_test,driver_receive_test,var_receive_test,pass_data_test,
   driver_send_test1,driver_send_test2,whole_echo_test,close_port_test]}].
@@ -119,6 +121,7 @@ error_receive_test1(_) ->                                                %% TODO
   ?DRIVER_S ! {'EXIT',some_port, normal},
   meck:wait(?DRIVER_S,handle_info,['_','_'],5000),
   meck:unload(?VAR_S).
+
 
 
 
