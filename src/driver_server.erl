@@ -11,10 +11,10 @@
 -define(FILE_C,code:priv_dir(iot)++"/driver_mock").
 -define(FILE_MOCK,code:priv_dir(iot)++"/driver_mock").
 -define(PACKET,{packet,1}).
-%% API
--export([start_link/1, init/1, handle_info/2, terminate/2, code_change/3, closeport/0, senddata/1, myfunc/0, handle_call/3, getport/0]).
+-export([start_link/1, init/1, handle_info/2, terminate/2, code_change/3,  handle_call/3]).
+-export([closeport/0, senddata/1, myfunc/0, getport/0, call_port/2]).
 
-%% gen_server to provide communication with C driver
+%%  Driver_server's task is to provide communication with external C Driver.
 
 start_link(Driver) ->
   gen_server:start_link(
@@ -34,57 +34,69 @@ init(Driver) ->
 
 
 % API
-closeport()->gen_server:call(driver_server,closeport).
-getport()->gen_server:call(driver_server,getport).
-senddata(Msg)->gen_server:call(driver_server,{senddata,Msg}).
-myfunc()->gen_server:call(driver_server,myfunc).
+closeport()->
+  gen_server:call(driver_server,closeport).
+getport()->
+  gen_server:call(driver_server,getport).
+senddata(Msg)->
+  gen_server:call(driver_server,{senddata,Msg}).
+myfunc()->
+  gen_server:call(driver_server,myfunc).
 
 
 
 %% Handle Calls and casts
-handle_call(myfunc,_,Data)->
-  {reply,"Driver Server's task is to maintain communication with Driver C and to pass received data to Variable Server." ,Data};
-
 handle_call({senddata,Msg},_,Data)->
-  lists:foreach(fun(X)->port_command(X,Msg) end,Data),
-  {reply,ok,Data};
+  Reply = call_port(hd(Data),Msg),
+  case Reply of
+    {error,What,Why} ->
+      driver_manager:adddata({msg,{What,Why}}),
+      exit(whereis(driver_server),kill);
+    {reply, {Port,{data,ReplyMsg}}}->driver_manager:adddata({msg,{Port,ReplyMsg}}),
+      {reply,{Port,ReplyMsg},Data};
+     Stuff-> driver_manager:adddata({msg,unknown}),
+     {reply,{badreceive,Stuff},Data}
+  end;
 
 handle_call(getport,_,Data)->
   {reply,Data,Data};
 
 handle_call(closeport,_,Data)->
-lists:foreach(fun(X) -> port_close(X)  end,Data),
-{reply,[],[]}.
+  lists:foreach(fun(X) -> port_close(X)  end,Data),
+  {reply,[],[]}.
 
 %% Receive Data from Driver
 handle_info({'EXIT',Pid, Reason},Data) when is_pid(Pid) ->               % usual termination (eg by supervisor)
-  var_server:adddata({msg,{normal_termination,Reason}}),
-  exit(whereis(driver_server),kill),                                     % TODO dont think it is good way to terminate process
-  {noreply,Data};
-handle_info({'EXIT',Port, Reason},Data) when is_port(Port) ->            %  termination by external drivers death
-  var_server:adddata({msg,{driver_termination,Reason}}),
+  driver_manager:adddata({msg,{normal_termination,Reason}}),
   exit(whereis(driver_server),kill),
   {noreply,Data};
+handle_info({'EXIT',Port, Reason},Data) when is_port(Port) ->            %  termination by external drivers death
+  driver_manager:adddata({msg,{driver_termination,Reason}}),
+  exit(whereis(driver_server),kill),
+  {noreply,Data};
+% Received data from sensor is sent to var_server
 handle_info(Msg,Data)  ->
-  % received data from sensor is sent to var_server
-  {ok,Msg} = var_server:adddata(Msg),
+  {ok,Msg} = driver_manager:adddata(Msg),
   {noreply,Data}.
-
 
 %% Other
 terminate(_, _) ->
-ok.
-
+  ok.
 
 code_change(_, _, _) ->
   error(not_implemented).
 
 
-
-
-
-
-
+%% Internal Function
+call_port(Port,Msg)->
+  port_command(Port,Msg),
+  receive
+    {'EXIT',Pid, Reason} when is_pid(Pid) ->                               % usual termination (eg by supervisor)
+      {error,usual_termination,Reason};                                    % TODO dont think it is good way to terminate process
+    {'EXIT',Port, Reason} when is_port(Port) ->                            %  termination by external drivers death
+      {error,driver_termination,Reason};
+    Reply -> {reply,Reply}
+  end.
 
 
 

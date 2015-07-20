@@ -11,10 +11,9 @@
 -behavoiur(gen_event).
 
 
-% Right now its now very useful, I was thinking to use it
-% as an error but whole event manager could be removed.
+%%  Right now its now very useful, I was thinking to use it
+%%  as an error but whole event manager could be removed.
 
-%% API
 -export([start_link/1, init/0, log_error/1]).
 
 start_link(_)->
@@ -26,5 +25,6 @@ init()->
   gen_event:add_handler(my_error_logger,console_logger,[]),
   {ok,[]}.
 
+%% API
 log_error(Data)->
   gen_event:notify(my_error_logger,{log_error,Data}).
