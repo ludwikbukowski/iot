@@ -1,0 +1,70 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>Test basic_SUITE:whole_echo_test result</title>
+<meta http-equiv="cache-control" content="no-cache">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="../../ct_default.css" type="text/css">
+<script type="text/javascript" src="../../jquery-latest.js"></script>
+<script type="text/javascript" src="../../jquery.tablesorter.min.js"></script>
+</head>
+<body>
+
+<a name="top"></a><pre>
+=== Test case: <a href="basic_suite.src.html#whole_echo_test-1">basic_SUITE:whole_echo_test/1</a> (click for source code)
+
+=== Config value:
+
+    [{watchdog,<0.148.0>},
+     {tc_logfile,"/Users/ludwikbukowski/Desktop/Intel/_build/test/logs/ct_run.nonode@nohost.2015-07-20_12.08.29/lib.iot.logs/run.2015-07-20_12.08.29/basic_suite.whole_echo_test.html"},
+     {tc_group_properties,[{name,communication},sequence]},
+     {tc_group_path,[]},
+     {data_dir,"/Users/ludwikbukowski/Desktop/Intel/_build/test/lib/iot/test/basic_SUITE_data/"},
+     {priv_dir,"/Users/ludwikbukowski/Desktop/Intel/_build/test/logs/ct_run.nonode@nohost.2015-07-20_12.08.29/lib.iot.logs/run.2015-07-20_12.08.29/log_private/"}]
+
+=== Current directory is "/Users/ludwikbukowski/Desktop/Intel/_build/test/logs/ct_run.nonode@nohost.2015-07-20_12.08.29"
+
+=== Started at 2015-07-20 12:08:30
+
+<br />
+
+<div class="ct_error_notify"><b>*** CT Error Notification 2015-07-20 12:08:30.304 ***</b>
+basic_SUITE:whole_echo_test failed on line 95
+Reason: {badmatch,[{some_port,{data,<<"Hi there!">>}},
+ {msg,{{#Port...}
+
+<a href="#end">Full error description and stacktrace</a>
+</div>
+<a name="end"></a>
+
+
+=== Ended at 2015-07-20 12:08:30
+=== location [{basic_SUITE,whole_echo_test,<a href="basic_suite.src.html#95">95</a>},
+              {test_server,ts_tc,1429},
+              {test_server,run_test_case_eval1,1026},
+              {test_server,run_test_case_eval,968}]
+=== reason = no match of right hand side value 
+                 [{some_port,{data,<<"Hi there!">>}},
+                  {msg,{{#Port<0.53929>,{data,<<"Some funny stuff.">>}}}},
+                  {msg,{{#Port<0.53929>,{data,<<"Rolling Stones roxs">>}}}}]
+  in function  basic_SUITE:whole_echo_test/1 (/Users/ludwikbukowski/Desktop/Intel/_build/test/lib/iot/test/basic_SUITE.erl, line 95)
+  in call from test_server:ts_tc/3 (test_server.erl, line 1429)
+  in call from test_server:run_test_case_eval1/6 (test_server.erl, line 1026)
+  in call from test_server:run_test_case_eval/9 (test_server.erl, line 968)
+=== 
+*** whole_echo_test failed.
+    Skipping all other cases in sequence.
+</pre>
+<center>
+<br /><hr /><p>
+<a href="../../../all_runs.html">Test run history
+</a>  |  <a href="../../../index.html">Top level test index
+</a>
+</p>
+<div class="copyright">Copyright &copy; 2015 <a href="http://www.erlang.org">Open Telecom Platform</a><br />
+Updated: <!date>Mon Jul 20 2015 12:08:30<!/date><br />
+</div>
+</center>
+</body>
+</html>

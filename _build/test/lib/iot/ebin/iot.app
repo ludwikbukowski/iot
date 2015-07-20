@@ -1,0 +1,12 @@
+{application,iot,
+             [{description,"Internet of Things Project."},
+              {vsn,"0.1.0"},
+              {registered,[]},
+              {mod,{iot_app,[]}},
+              {applications,[kernel,stdlib]},
+              {env,[{mocked,true}]},
+              {modules,[console_logger,driver_manager,driver_server,
+                        file_logger,iot_app,iot_sup,my_error_logger]},
+              {contributors,[]},
+              {licenses,[]},
+              {links,[]}]}.

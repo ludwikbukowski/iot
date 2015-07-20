@@ -1,0 +1,149 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>Unexpected I/O log</title>
+<meta http-equiv="cache-control" content="no-cache">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="../../ct_default.css" type="text/css">
+<script type="text/javascript" src="../../jquery-latest.js"></script>
+<script type="text/javascript" src="../../jquery.tablesorter.min.js"></script>
+</head>
+<body>
+
+<br />
+<h3>Unexpected I/O</h3>
+<pre>
+
+<div class="error_logger"><b>*** System report during basic_SUITE:driver_send_test1/1 in communication 2015-07-20 11:35:54.301 ***</b>
+
+=ERROR REPORT==== 20-Jul-2015::13:35:54 ===
+** Generic server driver_server_meck terminating 
+** Last message in was {'EXIT',<0.175.0>,
+                        {#Ref<0.0.0.3041>,23800,
+                         {'EXIT',
+                          {{badmatch,
+                            {#Port<0.53929>,{data,<<"Some funny stuff.">>}}},
+                           [{basic_SUITE,driver_send_test1,1,
+                             [{file,
+                               "/Users/ludwikbukowski/Desktop/Intel/_build/test/lib/iot/test/basic_SUITE.erl"},
+                              {line,92}]},
+                            {test_server,ts_tc,3,
+                             [{file,"test_server.erl"},{line,1429}]},
+                            {test_server,run_test_case_eval1,6,
+                             [{file,"test_server.erl"},{line,1026}]},
+                            {test_server,run_test_case_eval,9,
+                             [{file,"test_server.erl"},{line,968}]}]}},
+                         [{basic_SUITE,driver_send_test1,92},
+                          {test_server,ts_tc,1429},
+                          {test_server,run_test_case_eval1,1026},
+                          {test_server,run_test_case_eval,968}],
+                         []}}
+** When Server state == {state,driver_server,
+                         [{start_link,1},
+                          {init,1},
+                          {myfunc,0},
+                          {handle_call,3},
+                          {handle_info,2},
+                          {terminate,2},
+                          {code_change,3},
+                          {call_port,2},
+                          {senddata,1},
+                          {getport,0},
+                          {closeport,0}],
+                         {dict,11,16,16,8,80,48,
+                          {[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]},
+                          {{[],[],
+                            [[{code_change,3}|
+                              {{code_change,3},
+                               [{{args_matcher,['_','_','_'],<<>>,false},
+                                 meck_passthrough}]}]],
+                            [[{handle_info,2}|
+                              {{handle_info,2},
+                               [{{args_matcher,['_','_'],<<>>,false},
+                                 {meck_exec,#Fun<basic_SUITE.1.13880469>}}]}]],
+                            [],
+                            [[{myfunc,0}|
+                              {{myfunc,0},
+                               [{{args_matcher,[],<<>>,false},
+                                 meck_passthrough}]}]],
+                            [[{start_link,1}|
+                              {{start_link,1},
+                               [{{args_matcher,['_'],<<>>,false},
+                                 meck_passthrough}]}],
+                             [{getport,0}|
+                              {{getport,0},
+                               [{{args_matcher,[],<<>>,false},
+                                 meck_passthrough}]}],
+                             [{closeport,0}|
+                              {{closeport,0},
+                               [{{args_matcher,[],<<>>,false},
+                                 meck_passthrough}]}]],
+                            [],
+                            [[{call_port,2}|
+                              {{call_port,2},
+                               [{{args_matcher,['_','_'],<<>>,false},
+                                 meck_passthrough}]}]],
+                            [[{handle_call,3}|
+                              {{handle_call,3},
+                               [{{args_matcher,['_','_','_'],<<>>,false},
+                                 meck_passthrough}]}],
+                             [{terminate,2}|
+                              {{terminate,2},
+                               [{{args_matcher,['_','_'],<<>>,false},
+                                 meck_passthrough}]}]],
+                            [],[],
+                            [[{senddata,1}|
+                              {{senddata,1},
+                               [{{args_matcher,['_'],<<>>,false},
+                                 meck_passthrough}]}]],
+                            [],[],
+                            [[{init,1}|
+                              {{init,1},
+                               [{{args_matcher,['_'],<<>>,false},
+                                 meck_passthrough}]}]]}}},
+                         true,
+                         [{<0.175.0>,
+                           {driver_server,senddata,["Some funny stuff."]},
+                           {#Port<0.53929>,{data,<<"Some funny stuff.">>}}},
+                          {<0.149.0>,
+                           {driver_server,handle_call,
+                            [{senddata,"Some funny stuff."},
+                             {<0.175.0>,#Ref<0.0.0.3085>},
+                             [#Port<0.53929>]]},
+                           {reply,
+                            {#Port<0.53929>,{data,<<"Some funny stuff.">>}},
+                            [#Port<0.53929>]}}],
+                         {false,no_passthrough_cover},
+                         false,undefined,[]}
+** Reason for termination == 
+** {#Ref<0.0.0.3041>,23800,
+    {'EXIT',{{badmatch,{#Port<0.53929>,{data,<<"Some funny stuff.">>}}},
+             [{basic_SUITE,driver_send_test1,1,
+                           [{file,"/Users/ludwikbukowski/Desktop/Intel/_build/test/lib/iot/test/basic_SUITE.erl"},
+                            {line,92}]},
+              {test_server,ts_tc,3,[{file,"test_server.erl"},{line,1429}]},
+              {test_server,run_test_case_eval1,6,
+                           [{file,"test_server.erl"},{line,1026}]},
+              {test_server,run_test_case_eval,9,
+                           [{file,"test_server.erl"},{line,968}]}]}},
+    [{basic_SUITE,driver_send_test1,92},
+     {test_server,ts_tc,1429},
+     {test_server,run_test_case_eval1,1026},
+     {test_server,run_test_case_eval,968}],
+    []}
+
+</div>
+</pre>
+<center>
+<br /><hr /><p>
+<a href="../../../all_runs.html">Test run history
+</a>  |  <a href="../../../index.html">Top level test index
+</a>
+</p>
+<div class="copyright">Copyright &copy; 2015 <a href="http://www.erlang.org">Open Telecom Platform</a><br />
+Updated: <!date>Mon Jul 20 2015 11:35:53<!/date><br />
+</div>
+</center>
+</body>
+</html>

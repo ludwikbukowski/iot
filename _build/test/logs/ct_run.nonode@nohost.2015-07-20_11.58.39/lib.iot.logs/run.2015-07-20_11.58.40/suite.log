@@ -1,0 +1,127 @@
+=== Suite started at 2015-07-20 11:58:40
+=== Starting test, 9 test cases
+=cases         9
+=user          ludwikbukowski
+=host          nohost
+=hosts         nohost 
+=emulator_vsn  6.4
+=emulator      beam
+=otp_release   17
+=started       2015-07-20 11:58:40
+=case          basic_SUITE:init_per_suite
+=logfile       basic_suite.init_per_suite.html
+=started       2015-07-20 11:58:40
+=ended         2015-07-20 11:58:40
+=result        ok
+=elapsed       0.005679
+=case          basic_SUITE:simple_test
+=logfile       basic_suite.simple_test.html
+=started       2015-07-20 11:58:40
+=ended         2015-07-20 11:58:40
+=result        ok
+=elapsed       2.0e-6
+=case          basic_SUITE:init_per_group
+=logfile       basic_suite.init_per_group.html
+=group_props   [{name,communication},sequence]
+=started       2015-07-20 11:58:40
+=ended         2015-07-20 11:58:40
+=result        ok
+=elapsed       0.002235
+=case          basic_SUITE:check_port_test
+=logfile       basic_suite.check_port_test.html
+=started       2015-07-20 11:58:40
+=ended         2015-07-20 11:58:40
+=result        ok
+=elapsed       8.0e-6
+=case          basic_SUITE:driver_receive_test
+=logfile       basic_suite.driver_receive_test.html
+=started       2015-07-20 11:58:40
+=ended         2015-07-20 11:58:40
+=result        ok
+=elapsed       0.101869
+=case          basic_SUITE:var_receive_test
+=logfile       basic_suite.var_receive_test.html
+=started       2015-07-20 11:58:40
+=ended         2015-07-20 11:58:40
+=result        ok
+=elapsed       0.001069
+=case          basic_SUITE:pass_data_test
+=logfile       basic_suite.pass_data_test.html
+=started       2015-07-20 11:58:40
+=ended         2015-07-20 11:58:40
+=result        ok
+=elapsed       0.020485
+=case          basic_SUITE:driver_send_test1
+=logfile       basic_suite.driver_send_test1.html
+=started       2015-07-20 11:58:40
+=ended         2015-07-20 11:58:40
+=result        ok
+=elapsed       0.025448
+=case          basic_SUITE:driver_send_test2
+=logfile       basic_suite.driver_send_test2.html
+=started       2015-07-20 11:58:40
+=ended         2015-07-20 11:58:40
+=result        ok
+=elapsed       0.023334
+=case          basic_SUITE:whole_echo_test
+=logfile       basic_suite.whole_echo_test.html
+=started       2015-07-20 11:58:40
+=ended         2015-07-20 11:58:45
+=result        failed: {timeout,
+                           [{meck_proc,wait,6,
+                                [{file,
+                                     "/Users/ludwikbukowski/Desktop/Intel/_build/test/lib/meck/src/meck_proc.erl"},
+                                 {line,169}]},
+                            {basic_SUITE,whole_echo_test,1,
+                                [{file,
+                                     "/Users/ludwikbukowski/Desktop/Intel/_build/test/lib/iot/test/basic_SUITE.erl"},
+                                 {line,104}]},
+                            {test_server,ts_tc,3,
+                                [{file,"test_server.erl"},{line,1429}]},
+                            {test_server,run_test_case_eval1,6,
+                                [{file,"test_server.erl"},{line,1026}]},
+                            {test_server,run_test_case_eval,9,
+                                [{file,"test_server.erl"},{line,968}]}]}, [{meck_proc,
+                                                                            wait,
+                                                                            169},
+                                                                           {basic_SUITE,
+                                                                            whole_echo_test,
+                                                                            104},
+                                                                           {test_server,
+                                                                            ts_tc,
+                                                                            1429},
+                                                                           {test_server,
+                                                                            run_test_case_eval1,
+                                                                            1026},
+                                                                           {test_server,
+                                                                            run_test_case_eval,
+                                                                            968}]
+=== *** FAILED test case 8 of 9 ***
+=== 
+=case          basic_SUITE:close_port_test
+=group_props   [{name,"communication"}]
+=started       2015-07-20 11:58:45
+=result        auto_skipped: {failed,{basic_SUITE,whole_echo_test}}
+=== *** Skipping test case #9 {basic_SUITE,close_port_test} ***
+=case          basic_SUITE:end_per_group
+=logfile       basic_suite.end_per_group.html
+=group_props   [{name,communication},sequence]
+=started       2015-07-20 11:58:45
+=ended         2015-07-20 11:58:45
+=result        ok
+=elapsed       9.52e-4
+=group_time    5.423s
+=case          basic_SUITE:end_per_suite
+=logfile       basic_suite.end_per_suite.html
+=started       2015-07-20 11:58:45
+=ended         2015-07-20 11:58:45
+=result        ok
+=elapsed       6.42e-4
+=group_time    5.527s
+=== TEST COMPLETE, 7 ok, 1 failed, 1 skipped of 9 test cases
+
+=finished      2015-07-20 11:58:45
+=failed        1
+=successful    7
+=user_skipped  0
+=auto_skipped  1

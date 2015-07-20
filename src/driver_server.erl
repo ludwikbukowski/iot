@@ -52,10 +52,12 @@ handle_call({senddata,Msg},_,Data)->
     {error,What,Why} ->
       driver_manager:adddata({msg,{What,Why}}),
       exit(whereis(driver_server),kill);
-    {reply, {Port,{data,ReplyMsg}}}->driver_manager:adddata({msg,{Port,ReplyMsg}}),
-      {reply,{Port,ReplyMsg},Data};
-     Stuff-> driver_manager:adddata({msg,unknown}),
-     {reply,{badreceive,Stuff},Data}
+    {reply, ReplyMsg}->
+      {ok, ReplyMsg} = driver_manager:adddata(ReplyMsg),
+      {reply,ReplyMsg,Data};
+     Stuff->
+       {ok,unknown} = driver_manager:adddata({msg,unknown}),
+       {reply,{badreceive,Stuff},Data}
   end;
 
 handle_call(getport,_,Data)->
