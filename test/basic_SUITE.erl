@@ -37,10 +37,10 @@ end_per_suite(_)->
 
 
 init_per_group(communication,Config)->
- % meck:new(?MANAGER_S,[unstick,passthrough]),
-  %meck:expect(?MANAGER_S,openport,fun()->gen_server:call(driver_manager,{openport,?FILE_MOCK}) end),
+  meck:new(?MANAGER_S,[unstick,passthrough]),
+  meck:expect(?MANAGER_S,openport,fun()->gen_server:call(driver_manager,{openport,?FILE_MOCK,driver_server}) end),
   ?MANAGER_S:openport(),
- % meck:unload(?MANAGER_S),
+  meck:unload(?MANAGER_S),
   Config.
 
 end_per_group(communication,_)->

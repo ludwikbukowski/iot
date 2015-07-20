@@ -65,21 +65,21 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="basic_SUITE.erl" pinned="false" current-in-tab="false">
+      <file leaf-file-name="basic_SUITE.erl" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/test/basic_SUITE.erl">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0">
-              <caret line="92" column="37" selection-start-line="92" selection-start-column="37" selection-end-line="92" selection-end-column="37" />
+            <state vertical-scroll-proportion="0.33568904">
+              <caret line="46" column="24" selection-start-line="46" selection-start-column="24" selection-end-line="46" selection-end-column="24" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="driver_server.erl" pinned="false" current-in-tab="true">
+      <file leaf-file-name="driver_server.erl" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/driver_server.erl">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.45229682">
-              <caret line="55" column="55" selection-start-line="55" selection-start-column="55" selection-end-line="55" selection-end-column="55" />
+            <state vertical-scroll-proportion="0.0">
+              <caret line="54" column="22" selection-start-line="54" selection-start-column="22" selection-end-line="54" selection-end-column="22" />
               <folding />
             </state>
           </provider>
@@ -105,8 +105,8 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/test/basic_SUITE.erl" />
         <option value="$PROJECT_DIR$/src/driver_server.erl" />
+        <option value="$PROJECT_DIR$/test/basic_SUITE.erl" />
       </list>
     </option>
   </component>
@@ -186,7 +186,7 @@
     <property name="project.structure.last.edited" value="Modules" />
     <property name="project.structure.proportion" value="0.0" />
     <property name="project.structure.side.proportion" value="0.0" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../Projekt/sharepoint/intel/iot" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
@@ -481,6 +481,22 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/rebar.config">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/driver_server.erl">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="54" column="22" selection-start-line="54" selection-start-column="22" selection-end-line="54" selection-end-column="22" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/driver_manager.erl">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -505,26 +521,10 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/rebar.config">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/test/basic_SUITE.erl">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="92" column="37" selection-start-line="92" selection-start-column="37" selection-end-line="92" selection-end-column="37" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/driver_server.erl">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.45229682">
-          <caret line="55" column="55" selection-start-line="55" selection-start-column="55" selection-end-line="55" selection-end-column="55" />
+        <state vertical-scroll-proportion="0.33568904">
+          <caret line="46" column="24" selection-start-line="46" selection-start-column="24" selection-end-line="46" selection-end-column="24" />
           <folding />
         </state>
       </provider>
