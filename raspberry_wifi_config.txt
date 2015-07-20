@@ -1,0 +1,13 @@
+#Raspberry PI TL-WN725N 8188eu driver configuration
+#terminal:
+wget https://dl.dropboxusercontent.com/u/80256631/mt7601-3.18.11-v7-781.tar.gz
+tar xzf mt7601-3.18.11-v7-781.tar.gz
+./install.sh
+sudo nano /etc/wpa_supplicant/wpa_supplicant.conf
+#append to file:
+network={
+    ssid="The_ESSID_from_earlier"
+    psk="Your_wifi_password"
+}
+#
+sudo reboot
