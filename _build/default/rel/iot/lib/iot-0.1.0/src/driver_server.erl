@@ -53,7 +53,7 @@ handle_call({senddata,Msg},_,Data)->
       driver_manager:adddata({msg,{What,Why}}),
       exit(whereis(driver_server),kill);
     {reply, ReplyMsg}->
-      {ok, {msg,ReplyMsg}} = driver_manager:adddata({msg,ReplyMsg}),
+      {ok, ReplyMsg}  = driver_manager:adddata(ReplyMsg),
       {reply,ReplyMsg,Data};
      Stuff->
        {ok,unknown} = driver_manager:adddata({msg,unknown}),
