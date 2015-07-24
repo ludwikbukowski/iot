@@ -11,9 +11,11 @@
 -define(FILE_C,code:priv_dir(iot)++"/driver_mock").
 -define(FILE_MOCK,code:priv_dir(iot)++"/driver_mock").
 -define(PACKET,{packet,1}).
+-define(CLOSE,<<"close">>).
+-define(CLOSE_REPLY,<<"closing">>).
 -export([start_link/1, init/1, handle_info/2, terminate/2, code_change/3,  handle_call/3]).
--export([closeport/0, senddata/1, myfunc/0, getport/0, call_port/2]).
-
+-export([closeport/0, senddata/1, getport/0, call_port/2]).
+-behaviour(gen_server).
 %%  Driver_server's task is to provide communication with external C Driver.
 
 start_link(Driver) ->
@@ -40,8 +42,6 @@ getport()->
   gen_server:call(driver_server,getport).
 senddata(Msg)->
   gen_server:call(driver_server,{senddata,Msg}).
-myfunc()->
-  gen_server:call(driver_server,myfunc).
 
 
 
@@ -63,9 +63,16 @@ handle_call({senddata,Msg},_,Data)->
 handle_call(getport,_,Data)->
   {reply,Data,Data};
 
-handle_call(closeport,_,Data)->
-  lists:foreach(fun(X) -> port_close(X)  end,Data),
-  {reply,[],[]}.
+handle_call(closeport,_,Data)->                                          % Close port
+  port_close(hd(Data)),
+  {stop,normal,[]}.
+%%   {reply,CloseReply} = call_port(hd(Data),?CLOSE),
+%%   case CloseReply of
+%%     {_,{data,?CLOSE_REPLY}}->{reply,safe_close,Data};
+%%     Other->
+%%       driver_manager:adddata({msg,Other}),
+%%       {reply,error_while_close,Data}
+%%   end.
 
 %% Receive Data from Driver
 handle_info({'EXIT',Pid, Reason},Data) when is_pid(Pid) ->               % usual termination (eg by supervisor)
