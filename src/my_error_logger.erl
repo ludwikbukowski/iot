@@ -17,7 +17,7 @@
 -export([start_link/1, init/0, log_error/1]).
 
 start_link(_)->
-  gen_event:start_link({local,my_error_logger}).
+  gen_event:start_link({local,lala}).
 
 
 init()->

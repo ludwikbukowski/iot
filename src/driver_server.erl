@@ -13,14 +13,14 @@
 -define(PACKET,{packet,1}).
 -define(CLOSE,<<"close">>).
 -define(CLOSE_REPLY,<<"closing">>).
--export([start_link/1, init/1, handle_info/2, terminate/2, code_change/3,  handle_call/3]).
--export([closeport/0, senddata/1, getport/0, call_port/2]).
+-export([start_link/2, init/1, handle_info/2, terminate/2, code_change/3,  handle_call/3]).
+-export([closeport/1, senddata/2, getport/1, call_port/2]).
 -behaviour(gen_server).
 %%  Driver_server's task is to provide communication with external C Driver.
 
-start_link(Driver) ->
+start_link(Name,Driver) ->
   gen_server:start_link(
-    {local,driver_server},
+    {local,Name},
     driver_server,
     [Driver], []).
 
@@ -36,22 +36,22 @@ init(Driver) ->
 
 
 % API
-closeport()->
-  gen_server:call(driver_server,closeport).
-getport()->
-  gen_server:call(driver_server,getport).
-senddata(Msg)->
-  gen_server:call(driver_server,{senddata,Msg}).
+closeport(Name)->
+  gen_server:call(Name,closeport).
+getport(Name)->
+  gen_server:call(Name,getport).
+senddata(Name,Msg)->
+  gen_server:call(Name,{senddata,Msg}).
 
 
 
 %% Handle Calls and casts
-handle_call({senddata,Msg},_,Data)->
+handle_call({senddata, Msg},_,Data)->
   Reply = call_port(hd(Data),Msg),
   case Reply of
     {error,What,Why} ->
       driver_manager:adddata({msg,{What,Why}}),
-      exit(whereis(driver_server),kill);
+      exit(self(),kill);
     {reply, ReplyMsg}->
       {ok, ReplyMsg}  = driver_manager:adddata(ReplyMsg),
       {reply,ReplyMsg,Data};
@@ -77,11 +77,11 @@ handle_call(closeport,_,Data)->                                          % Close
 %% Receive Data from Driver
 handle_info({'EXIT',Pid, Reason},Data) when is_pid(Pid) ->               % usual termination (eg by supervisor)
   driver_manager:adddata({msg,{normal_termination,Reason}}),
-  exit(whereis(driver_server),kill),
+  exit(self(),kill),
   {noreply,Data};
 handle_info({'EXIT',Port, Reason},Data) when is_port(Port) ->            %  termination by external drivers death
   driver_manager:adddata({msg,{driver_termination,Reason}}),
-  exit(whereis(driver_server),kill),
+  exit(self(),kill),
   {noreply,Data};
 % Received data from sensor is sent to var_server
 handle_info(Msg,Data)  ->
