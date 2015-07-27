@@ -26,15 +26,15 @@ You should have UART Port connected (and loopbacked)
 if not change line in iot.app.src " {env,[{mocked,true}]} " to  {env,[{mocked,false}]}
 
     $ sh start.sh
-    (IoF@127.0.0.1)> driver_manager:openport().
+    (IoF@127.0.0.1)> driver_manager:openport(driver,uart).
     {ok,<0.XY.0>}
     (IoF@127.0.0.1)> driver_manager:getdata().
     []
-    (IoF@127.0.0.1)> driver_manager:senddata("Some text").
+    (IoF@127.0.0.1)> driver_manager:senddata(driver, "Some text").
     ok
     (IoF@127.0.0.1)> driver_manager:getdata().
     [{#Port<0.XYZ>,{data,<<"Some text">>}}]
-    (IoF@127.0.0.1)>  driver_manager:senddata("More text").
+    (IoF@127.0.0.1)>  driver_manager:senddata(driver, "More text").
     ok
     (IoF@127.0.0.1)> driver_manager:getdata().
     [{#Port<0.XYZ>,{data,<<"Some text">>}},
@@ -42,5 +42,6 @@ if not change line in iot.app.src " {env,[{mocked,true}]} " to  {env,[{mocked,fa
 
 Bugs
 ----
-    Yet dont know why you have to start driver at least two times to get driver working. Working on it
+    Yet dont know why you have to start driver at least two times to get driver working.
+    Working on it
 
