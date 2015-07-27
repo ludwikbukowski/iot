@@ -14,7 +14,7 @@
 -define(CLOSE,<<"close">>).
 -define(CLOSE_REPLY,<<"closing">>).
 -export([start_link/2, init/1, handle_info/2, terminate/2, code_change/3,  handle_call/3]).
--export([closeport/1, senddata/2, getport/1, call_port/2]).
+-export([close_port/1, send_data/2, get_port/1, call_port/2]).
 -behaviour(gen_server).
 %%  Driver_server's task is to provide communication with external C Driver.
 
@@ -36,11 +36,11 @@ init(Driver) ->
 
 
 % API
-closeport(Name)->
+close_port(Name)->
   gen_server:call(Name,closeport).
-getport(Name)->
+get_port(Name)->
   gen_server:call(Name,getport).
-senddata(Name,Msg)->
+send_data(Name,Msg)->
   gen_server:call(Name,{senddata,Msg}).
 
 
@@ -53,10 +53,10 @@ handle_call({senddata, Msg},_,Data)->
       driver_manager:adddata({msg,{What,Why}}),
       exit(self(),kill);
     {reply, ReplyMsg}->
-      {ok, ReplyMsg}  = driver_manager:adddata(ReplyMsg),
+      {ok, ReplyMsg}  = driver_manager:add_data(ReplyMsg),
       {reply,ReplyMsg,Data};
      Stuff->
-       {ok,unknown} = driver_manager:adddata({msg,unknown}),
+       {ok,unknown} = driver_manager:add_data({msg,unknown}),
        {reply,{badreceive,Stuff},Data}
   end;
 
@@ -76,16 +76,16 @@ handle_call(closeport,_,Data)->                                          % Close
 
 %% Receive Data from Driver
 handle_info({'EXIT',Pid, Reason},Data) when is_pid(Pid) ->               % usual termination (eg by supervisor)
-  driver_manager:adddata({msg,{normal_termination,Reason}}),
-  exit(self(),kill),
-  {noreply,Data};
+  driver_manager:add_data({msg,{normal_termination,Reason}}),
+  %exit(self(),kill),
+  {stop,kill,Data};
 handle_info({'EXIT',Port, Reason},Data) when is_port(Port) ->            %  termination by external drivers death
-  driver_manager:adddata({msg,{driver_termination,Reason}}),
-  exit(self(),kill),
-  {noreply,Data};
+  driver_manager:add_data({msg,{driver_termination,Reason}}),
+  %exit(self(),kill),
+  {stop,kill,Data};
 % Received data from sensor is sent to var_server
 handle_info(Msg,Data)  ->
-  {ok,Msg} = driver_manager:adddata(Msg),
+  {ok,Msg} = driver_manager:add_data(Msg),
   {noreply,Data}.
 
 %% Other

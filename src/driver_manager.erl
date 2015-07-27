@@ -9,9 +9,11 @@
 -module(driver_manager).
 -author("ludwikbukowski").
 -behaviour(gen_server).
--define(FILE_C(),case application:get_env(iot,mocked) of {ok,true} -> code:priv_dir(iot)++"/driver_mock"; _->code:priv_dir(iot)++"/driver" end).
 -export([start_link/1, init/1, handle_call/3, terminate/2, handle_info/2, code_change/3]).
--export([adddata/1, getdata/0, openport/2, closeport/1]).
+-export([add_data/1, get_data/0, open_port/2, close_port/1]).
+-define(FILE_C(),case application:get_env(iot,mocked) of {ok,true} -> code:priv_dir(iot)++"/driver_mock"; _->code:priv_dir(iot)++"/driver" end).
+-export_type([sensor_type/0]).
+-type sensor_type() :: 'uart' | atom().
 
 %%  Driver Manager's task is to provide console communication, restore data received from sensors and manage sensor drivers.
 
@@ -27,13 +29,15 @@ init(_) ->
 
 
 %% Api
-openport(Name,Option)->
+-spec open_port(atom(),sensor_type()) ->{'reply',{'ok',pid()},any()}.
+open_port(Name,Option)->
   gen_server:call(driver_manager,{openport,Name, ?FILE_C(), Option}).
-closeport(Name)->
+-spec close_port(atom()) ->{'reply',any(),any()}.
+close_port(Name)->
   gen_server:call(driver_manager,{closeport,Name}).
-adddata(Msg)->
+add_data(Msg)->
   gen_server:call(driver_manager,{msg,Msg}).
-getdata()->
+get_data()->
   gen_server:call(driver_manager,getdata).
 
 
@@ -54,7 +58,7 @@ handle_call({openport,_,_,_},_,Data)->                                          
   {reply,{unknown_option},Data};
 
 handle_call({closeport,Name},_,Data)->
-  try driver_server:closeport(Name) of
+  try driver_server:close_port(Name) of
     Reply-> {reply,{wrong_reply,Reply},Data}
     catch
     exit:Exit ->
