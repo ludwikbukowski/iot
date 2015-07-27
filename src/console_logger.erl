@@ -24,7 +24,9 @@ terminate(_, _) ->
     ok.
 
 handle_event({log_error,Data},State) ->
-    io:format("Error occurs:~n~s~n",[Data]),
+    R= io_lib:format("~p",[Data]),                                                  %% Convert Term to list
+    ErrorToPrint = lists:flatten(R),
+    io:format("Error occurs:~n~s~n",[ErrorToPrint]),
     {ok,State++[Data]}.
 
 handle_call(getdata,State) ->

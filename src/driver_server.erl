@@ -10,6 +10,7 @@
 -author("ludwikbukowski").
 -define(FILE_C,code:priv_dir(iot)++"/driver_mock").
 -define(FILE_MOCK,code:priv_dir(iot)++"/driver_mock").
+-define(ERROR_LOGGER,my_error_logger).
 -define(PACKET,{packet,1}).
 -define(CLOSE,<<"close">>).
 -define(CLOSE_REPLY,<<"closing">>).
@@ -50,13 +51,13 @@ handle_call({senddata, Msg},_,Data)->
   Reply = call_port(hd(Data),Msg),
   case Reply of
     {error,What,Why} ->
-      driver_manager:adddata({msg,{What,Why}}),
-      exit(self(),kill);
+      ?ERROR_LOGGER:log_error({What,Why}),
+      {stop,{What,Why},Data};
     {reply, ReplyMsg}->
       {ok, ReplyMsg}  = driver_manager:add_data(ReplyMsg),
       {reply,ReplyMsg,Data};
      Stuff->
-       {ok,unknown} = driver_manager:add_data({msg,unknown}),
+       ?ERROR_LOGGER:log_error({unknown,Stuff}),
        {reply,{badreceive,Stuff},Data}
   end;
 
@@ -66,23 +67,17 @@ handle_call(getport,_,Data)->
 handle_call(closeport,_,Data)->                                          % Close port
   port_close(hd(Data)),
   {stop,normal,[]}.
-%%   {reply,CloseReply} = call_port(hd(Data),?CLOSE),
-%%   case CloseReply of
-%%     {_,{data,?CLOSE_REPLY}}->{reply,safe_close,Data};
-%%     Other->
-%%       driver_manager:adddata({msg,Other}),
-%%       {reply,error_while_close,Data}
-%%   end.
 
 %% Receive Data from Driver
-handle_info({'EXIT',Pid, Reason},Data) when is_pid(Pid) ->               % usual termination (eg by supervisor)
-  driver_manager:add_data({msg,{normal_termination,Reason}}),
-  %exit(self(),kill),
-  {stop,kill,Data};
-handle_info({'EXIT',Port, Reason},Data) when is_port(Port) ->            %  termination by external drivers death
-  driver_manager:add_data({msg,{driver_termination,Reason}}),
-  %exit(self(),kill),
-  {stop,kill,Data};
+handle_info(Error = {'EXIT',Pid, _},Data) when is_pid(Pid) ->               % usual termination (eg by supervisor)
+  ?ERROR_LOGGER:log_error({normal_termination,Error}),
+  {stop,normal_termination,Data};
+handle_info(Error = {'EXIT',Port, _},Data) when is_port(Port) ->            %  termination by external drivers death
+  ?ERROR_LOGGER:log_error({driver_termination,Error}),
+  {stop,driver_termination,Data};
+handle_info(Error = {_,{exit_status,_}},Data)  ->                           % Received exit_status Code. Im not terminating server, because there will be sent also signal "{'Exit', ...
+  ?ERROR_LOGGER:log_error(Error),
+  {noreply,Data};
 % Received data from sensor is sent to var_server
 handle_info(Msg,Data)  ->
   {ok,Msg} = driver_manager:add_data(Msg),
@@ -100,10 +95,10 @@ code_change(_, _, _) ->
 call_port(Port,Msg)->
   port_command(Port,Msg),
   receive
-    {'EXIT',Pid, Reason} when is_pid(Pid) ->                               % usual termination (eg by supervisor)
-      {error,usual_termination,Reason};                                    % TODO dont think it is good way to terminate process
-    {'EXIT',Port, Reason} when is_port(Port) ->                            %  termination by external drivers death
-      {error,driver_termination,Reason};
+    Error = {'EXIT',Pid, _} when is_pid(Pid) ->                               % usual termination (eg by supervisor)
+      {error,usual_termination,Error};                                        % TODO dont think it is good way to terminate process
+    Error = {'EXIT',Port, _} when is_port(Port) ->                            %  termination by external drivers death
+      {error,driver_termination,Error};
     Reply -> {reply,Reply}
   end.
 

@@ -14,7 +14,7 @@
 -define(FILE_C(),case application:get_env(iot,mocked) of {ok,true} -> code:priv_dir(iot)++"/driver_mock"; _->code:priv_dir(iot)++"/driver" end).
 -export_type([sensor_type/0]).
 -type sensor_type() :: 'uart' | atom().
-
+-define(ERROR_LOGGER,my_error_logger).
 %%  Driver Manager's task is to provide console communication, restore data received from sensors and manage sensor drivers.
 
 start_link(InitialValue) ->

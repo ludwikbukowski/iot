@@ -25,6 +25,5 @@ code_change(_, State, _) ->
 terminate(_, _) -> ok.
 
 handle_event({log_error,Data},State) ->
-  io:format("Saving logs to file...~n"),
   file:write_file(?FILE_LOG, io_lib:fwrite("~p.\n", [Data]),[append]),
   {ok,State}.
