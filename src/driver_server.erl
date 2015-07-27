@@ -37,15 +37,15 @@ init(Driver) ->
 
 
 % API
--spec close_port(atom()) -> {'stop',normal, list()}.
+-spec close_port(atom()) -> {stop, normal, any()}.
 close_port(Name) ->
   gen_server:call(Name, closeport).
 
--spec get_port(atom()) -> {'reply', any(), any()}.
+-spec get_port(atom()) -> {reply, port(), any()}.
 get_port(Name) ->
   gen_server:call(Name, getport).
 
--spec send_data(atom(), any()) -> {'reply',any(), any()}.
+-spec send_data(atom(), any()) -> {stop, any(), any()} | {reply, {badreceive, any()}, any()} |  {reply,any(), any()}.
 send_data(Name,Msg) ->
   gen_server:call(Name, {senddata,Msg}).
 
@@ -67,7 +67,8 @@ handle_call({senddata, Msg},_,Data) ->
   end;
 
 handle_call(getport,_,Data) ->
-  {reply,Data,Data};
+  {reply,hd(Data),Data};
+
 handle_call(closeport,_,Data) ->                                          % Close port
   port_close(hd(Data)),
   {stop,normal,[]}.

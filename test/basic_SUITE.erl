@@ -56,9 +56,7 @@ simple_test(_)->
 
 %% Driver_server side
 check_port_test(_)->
-  List = ?DRIVER_S:get_port(?DRIVER_S),
-  1 = length(List),
-  [Port] = List,
+  Port = ?DRIVER_S:get_port(?DRIVER_S),
   true = is_port(Port).
 
 driver_receive_test(_) ->                                                       %% Receive data from fake driver
