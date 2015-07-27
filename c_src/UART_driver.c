@@ -103,7 +103,7 @@ int main(int argc, char * argv[]){
 	//											immediately with a failure status if the output can't be written immediately.
 	//
 	//	O_NOCTTY - When set and path identifies a terminal device, open() shall not cause the terminal device to become the controlling terminal for the process.
-	uart_fd = open("/dev/ttyAMA0", O_RDWR | O_NOCTTY | O_NDELAY);		//Open in non blocking read/write mode
+	uart_fd = open("/dev/ttyAMA0", O_RDWR | O_NOCTTY );		//Open in non blocking read/write mode
 
 	if (uart_fd == -1)
 	{
@@ -134,6 +134,7 @@ int main(int argc, char * argv[]){
 		int rx_length = read(uart_fd, (void*)rx_buffer, sizeof(rx_buffer));		//Filestream, buffer to store in, number of bytes to read (max)
 		if (rx_length <= 0)
 		{
+		close_driver();
 			//No data waiting (no-blocking read operation)
             
 		}
