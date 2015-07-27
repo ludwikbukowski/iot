@@ -37,17 +37,22 @@ init(Driver) ->
 
 
 % API
-close_port(Name)->
-  gen_server:call(Name,closeport).
-get_port(Name)->
-  gen_server:call(Name,getport).
-send_data(Name,Msg)->
-  gen_server:call(Name,{senddata,Msg}).
+-spec close_port(atom()) -> {'stop',normal, list()}.
+close_port(Name) ->
+  gen_server:call(Name, closeport).
+
+-spec get_port(atom()) -> {'reply', any(), any()}.
+get_port(Name) ->
+  gen_server:call(Name, getport).
+
+-spec send_data(atom(), any()) -> {'reply',any(), any()}.
+send_data(Name,Msg) ->
+  gen_server:call(Name, {senddata,Msg}).
 
 
 
 %% Handle Calls and casts
-handle_call({senddata, Msg},_,Data)->
+handle_call({senddata, Msg},_,Data) ->
   Reply = call_port(hd(Data),Msg),
   case Reply of
     {error,What,Why} ->
@@ -61,10 +66,9 @@ handle_call({senddata, Msg},_,Data)->
        {reply,{badreceive,Stuff},Data}
   end;
 
-handle_call(getport,_,Data)->
+handle_call(getport,_,Data) ->
   {reply,Data,Data};
-
-handle_call(closeport,_,Data)->                                          % Close port
+handle_call(closeport,_,Data) ->                                          % Close port
   port_close(hd(Data)),
   {stop,normal,[]}.
 
@@ -75,11 +79,11 @@ handle_info(Error = {'EXIT',Pid, _},Data) when is_pid(Pid) ->               % us
 handle_info(Error = {'EXIT',Port, _},Data) when is_port(Port) ->            %  termination by external drivers death
   ?ERROR_LOGGER:log_error({driver_termination,Error}),
   {stop,driver_termination,Data};
-handle_info(Error = {_,{exit_status,_}},Data)  ->                           % Received exit_status Code. Im not terminating server, because there will be sent also signal "{'Exit', ...
+handle_info(Error = {_,{exit_status,_}},Data) ->                           % Received exit_status Code. Im not terminating server, because there will be sent also signal "{'Exit', ...
   ?ERROR_LOGGER:log_error(Error),
   {noreply,Data};
 % Received data from sensor is sent to var_server
-handle_info(Msg,Data)  ->
+handle_info(Msg,Data) ->
   {ok,Msg} = driver_manager:add_data(Msg),
   {noreply,Data}.
 
@@ -92,7 +96,7 @@ code_change(_, _, _) ->
 
 
 %% Internal Function
-call_port(Port,Msg)->
+call_port(Port,Msg) ->
   port_command(Port,Msg),
   receive
     Error = {'EXIT',Pid, _} when is_pid(Pid) ->                               % usual termination (eg by supervisor)

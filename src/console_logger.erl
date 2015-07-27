@@ -12,7 +12,7 @@
 
 %% API
 -export([init/1, terminate/2, code_change/3, handle_info/2, handle_call/2, handle_event/2, handle_call/2]).
-init(_)-> {ok,[]}.
+init(_) -> {ok,[]}.
 
 handle_info(_,State) ->
     {ok,State}.

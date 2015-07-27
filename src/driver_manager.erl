@@ -29,37 +29,41 @@ init(_) ->
 
 
 %% Api
--spec open_port(atom(),sensor_type()) ->{'reply',{'ok',pid()},any()}.
-open_port(Name,Option)->
-  gen_server:call(driver_manager,{openport,Name, ?FILE_C(), Option}).
--spec close_port(atom()) ->{'reply',any(),any()}.
-close_port(Name)->
-  gen_server:call(driver_manager,{closeport,Name}).
-add_data(Msg)->
-  gen_server:call(driver_manager,{msg,Msg}).
-get_data()->
-  gen_server:call(driver_manager,getdata).
+-spec open_port(atom(), sensor_type()) -> {'reply', {'ok',pid()}, any()}.
+open_port(Name,Option) ->
+  gen_server:call(driver_manager, {openport, Name, ?FILE_C(), Option}).
+
+-spec close_port(atom()) -> {'reply', any(), any()}.
+close_port(Name) ->
+  gen_server:call(driver_manager, {closeport, Name}).
+
+-spec add_data(any()) -> {'reply', {ok, any()}, any()}.
+add_data(Msg) ->
+  gen_server:call(driver_manager, {msg, Msg}).
+
+-spec get_data()->{'reply', any(), any()}.
+get_data() ->
+  gen_server:call(driver_manager, getdata).
 
 
 
 
 %% Handle Calls and casts
-handle_call({msg,Msg},_,Data)->
+handle_call({msg,Msg},_,Data) ->
   {reply,{ok,Msg},Data ++ [Msg]};
 
-
-handle_call({openport,Name, File, uart},_,Data)->
+handle_call({openport,Name, File, uart},_,Data) ->
   {ok,Pid}= supervisor:start_child(
     zeus_supervisor,
-    {Name,{driver_server,start_link,[Name, File]},transient,5000,worker,[driver_server]}),              %% Starting data is empty list of Ports
+    {Name,{driver_server,start_link,[Name, File]}, transient, 5000, worker, [driver_server]}),              %% Starting data is empty list of Ports
   {reply,{ok,Pid},Data};
 
-handle_call({openport,_,_,_},_,Data)->                                                            %% Override to other options
-  {reply,{unknown_option},Data};
+handle_call({openport,_,_,_},_,Data) ->                                                            %% Override to other options
+  {reply, {unknown_option}, Data};
 
-handle_call({closeport,Name},_,Data)->
+handle_call({closeport,Name},_,Data) ->
   try driver_server:close_port(Name) of
-    Reply-> {reply,{wrong_reply,Reply},Data}
+    Reply-> {reply, {wrong_reply, Reply}, Data}
     catch
     exit:Exit ->
       ok = supervisor:delete_child(zeus_supervisor,Name),
@@ -67,11 +71,10 @@ handle_call({closeport,Name},_,Data)->
     Other:Reason -> {reply,{wrong_close,Other,Reason}}
   end;
                                                                              %% TODO not asynch... !
-
-handle_call(getdata,_,Data)->
+handle_call(getdata,_,Data) ->
   {reply,Data,Data};
 
-handle_call(_,From,Data)->
+handle_call(_,From,Data) ->
   {reply,From,Data}.
 
 

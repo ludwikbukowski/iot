@@ -11,7 +11,7 @@
 -behavoiur(gen_event).
 -define(FILE_LOG,"./error.log").
 -export([init/1, terminate/2, code_change/3, handle_info/2, handle_call/2, handle_event/2]).
-init(_)-> {ok,[]}.
+init(_) -> {ok,[]}.
 
 handle_call(_,State) ->
   {ok,ok,State}.
