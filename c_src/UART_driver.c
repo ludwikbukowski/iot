@@ -135,8 +135,6 @@ int main(int argc, char * argv[]){
 		if (rx_length <= 0)
 		{
 		close_driver();
-			//No data waiting (no-blocking read operation)
-            
 		}
 		else
 		{

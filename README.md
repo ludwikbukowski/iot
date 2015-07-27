@@ -39,5 +39,7 @@ if not change line in iot.app.src " {env,[{mocked,true}]} " to  {env,[{mocked,fa
     (IoF@127.0.0.1)> driver_manager:getdata().
     [{#Port<0.XYZ>,{data,<<"Some text">>}},
      {#Port<0.XYZ>,{data,<<"More text">>}}]
-
+ Bugs
+ ----
+    Yet dont know why you have to start driver at least two times to get driver working. Working on it
 
