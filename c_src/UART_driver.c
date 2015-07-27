@@ -22,6 +22,7 @@ int packet_flag = 0;
 int uart_fd = -1;
 int erl_read = 0;
 int erl_write = 1;
+int offset =0;
 
 
 
@@ -46,7 +47,7 @@ void from_erlang_pthread(){
 	char echo[MSG_SIZE];
 	while(1){
 
-	int count = read(erl_read, &readed,sizeof(readed));
+	int count = pread(erl_read, &readed,sizeof(readed),0);
 	if(count<=0){
 		close_driver();
 	}
@@ -54,7 +55,7 @@ void from_erlang_pthread(){
 	strcpy(echo,readed);
 
 
-	 int count_uart= write(uart_fd, &echo[0], count);		//Filestream, bytes to write, number of bytes to write
+	 int count_uart= pwrite(uart_fd, &echo[0], count,offset);		//Filestream, bytes to write, number of bytes to write
 		if (count_uart <= 0)
 		{
 		close_driver();
@@ -131,7 +132,7 @@ int main(int argc, char * argv[]){
 
 		unsigned char rx_buffer[MSG_SIZE];
 		unsigned char rx_echo[MSG_SIZE];
-		int rx_length = read(uart_fd, (void*)rx_buffer, sizeof(rx_buffer));		//Filestream, buffer to store in, number of bytes to read (max)
+		int rx_length = pread(uart_fd, (void*)rx_buffer, sizeof(rx_buffer),offset);		//Filestream, buffer to store in, number of bytes to read (max)
 		if (rx_length <= 0)
 		{
 			//No data waiting (no-blocking read operation)
@@ -141,7 +142,7 @@ int main(int argc, char * argv[]){
 		{
 			int count_erl;
 			strcpy(rx_echo,rx_buffer);
-			count_erl = write(erl_write,rx_echo,rx_length);
+			count_erl = pwrite(erl_write,rx_echo,rx_length,offset);
 			if(count_erl <=0){
 				close_driver();
 			}

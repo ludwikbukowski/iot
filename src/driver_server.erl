@@ -100,6 +100,8 @@ call_port(Port,Msg)->
     Error = {'EXIT',Port, _} when is_port(Port) ->                            %  termination by external drivers death
       {error,driver_termination,Error};
     Reply -> {reply,Reply}
+    after 5000 ->
+      {error,driver_timeout,timeout}
   end.
 
 
