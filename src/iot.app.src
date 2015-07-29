@@ -6,7 +6,8 @@
   {applications,
    [
     kernel,
-    stdlib
+    stdlib,
+     escalus
    ]},
 %  {app, escalus, [{env, [{common_test,false}]}]},
   {env,[{mocked,true}]},
