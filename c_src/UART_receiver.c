@@ -106,7 +106,7 @@ int main(int argc, char * argv[]){
 	while(1){
 
 		unsigned char rx_buffer[MSG_SIZE];
-		unsigned char rx_echo[MSG_SIZE];
+		unsigned char rx_echo[MSG_SIZE+1];
 		int rx_length = read(uart_fd, (void*)rx_buffer, sizeof(rx_buffer));		//Filestream, buffer to store in, number of bytes to read (max)
 		if (rx_length <= 0)
 		{
@@ -115,7 +115,8 @@ int main(int argc, char * argv[]){
 		else
 		{
 			int count_erl;
-			strcpy(rx_echo,rx_buffer);
+			strcpy(rx_echo+1,rx_buffer);
+			rx_echo[0] = 5;
 			count_erl = write(erl_write,rx_echo,rx_length);
 			if(count_erl <=0){
 				close_driver();
