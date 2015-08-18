@@ -29,6 +29,7 @@ init([]) ->
         [
             {driver_manager,{driver_manager,start_link,[[]]},permanent,5000,worker,[driver_manager]}
             ,{my_error_logger,{my_error_logger,start_link,[[]]},permanent,5000,worker,[my_error_logger]}      % Its more excercise than useful module
+            ,{connection_server,{connection_server,start_link,[[]]},permanent,5000,worker,[connection_server]}      % To connect to mongoose server
         ]
          }
     }.

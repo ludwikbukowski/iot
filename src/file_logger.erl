@@ -26,4 +26,4 @@ terminate(_, _) -> ok.
 
 handle_event({log_error,Data},State) ->
   file:write_file(?FILE_LOG, io_lib:fwrite("~p.\n", [Data]),[append]),
-  {ok,State}.
+  {ok,State++[Data]}.

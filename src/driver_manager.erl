@@ -10,18 +10,21 @@
 -author("ludwikbukowski").
 -behaviour(gen_server).
 -export([start_link/1, init/1, handle_call/3, terminate/2, handle_info/2, code_change/3]).
--export([add_data/1, get_data/0, open_port/2, close_port/1]).
+-export([add_data/1, get_data/0, open_port/2, close_port/1, connect_to_mongoose/0, connect_to_mongoose/0]).
 -define(FILE_C(),case application:get_env(iot,mocked) of {ok,true} -> code:priv_dir(iot)++"/driver_mock"; _->code:priv_dir(iot)++"/driver" end).
+-define(NAME, driver_manager).
+-define(CONNECTION_SERVER, connection_server).
 -export_type([sensor_type/0, close_type/0]).
 -type sensor_type() :: 'uart' | atom().
 -type close_type() :: wrong_close | safe_close.
+-type server_name() :: atom().
 -define(ERROR_LOGGER,my_error_logger).
 %%  Driver Manager's task is to provide console communication, restore data received from sensors and manage sensor drivers.
 
 start_link(InitialValue) ->
   gen_server:start_link(
-    {local, driver_manager},
-    driver_manager,
+    {local, ?NAME},
+    ?NAME,
     [InitialValue], []).
 
 init(_) ->
@@ -30,21 +33,26 @@ init(_) ->
 
 
 %% Api
--spec open_port(atom(), sensor_type()) -> {reply, {ok,pid()}, any()} | {reply, unknown_option, any()}.
-open_port(Name,Option) ->
-  gen_server:call(driver_manager, {openport, Name, ?FILE_C(), Option}).
+-spec open_port(server_name(), sensor_type()) -> {reply, {ok,pid()}, any()} | {reply, unknown_option, any()}.
+open_port(Name, Option) ->
+  gen_server:call(?NAME, {openport, Name, ?FILE_C(), Option}).
 
 -spec close_port(atom()) -> {reply, {close_type(), any()}, any()}.
 close_port(Name) ->
-  gen_server:call(driver_manager, {closeport, Name}).
+  gen_server:call(?NAME, {closeport, Name}).
 
 -spec add_data(any()) -> {reply, {ok, any()}, any()}.
 add_data(Msg) ->
-  gen_server:call(driver_manager, {msg, Msg}).
+  gen_server:call(?NAME, {msg, Msg}).
 
 -spec get_data()->{reply, any(), any()}.
 get_data() ->
-  gen_server:call(driver_manager, getdata).
+  gen_server:call(?NAME, getdata).
+
+connect_to_mongoose() ->
+  gen_server:call(?NAME, connect).
+
+
 
 
 
@@ -53,11 +61,15 @@ get_data() ->
 handle_call({msg,Msg},_,Data) ->
   {reply,{ok,Msg},Data ++ [Msg]};
 
-handle_call({openport,Name, File, uart},_,Data) ->
+handle_call({openport, Name, File, uart},_,Data) ->
   {ok,Pid}= supervisor:start_child(
     zeus_supervisor,
     {Name,{driver_server,start_link,[Name, File]}, transient, 5000, worker, [driver_server]}),              %% Starting data is empty list of Ports
   {reply,{ok,Pid},Data};
+
+handle_call(connect,_,Data) ->
+  _ = ?CONNECTION_SERVER:connect(),
+  {reply,connected,Data};
 
 handle_call({openport,_,_,_},_,Data) ->                                                            %% Override to other options
   {reply, unknown_option, Data};

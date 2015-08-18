@@ -6,10 +6,19 @@
   {applications,
    [
     kernel,
-    stdlib
+    stdlib,
+     sasl,
+    base16,
+     escalus
    ]},
-%  {app, escalus, [{env, [{common_test,false}]}]},
-  {env,[{mocked,false}]},
+  {env,[
+   {mocked,true},
+   {os,raspberry},
+   {username,<<"raspberrypi">>},
+   {password,<<"raspberrypi">>},
+   {domain,<<"localhost">>},
+   {resource,<<"">>}
+  ]},
   {modules, []},
 
   {contributors, []},
