@@ -40,10 +40,10 @@ connect() ->
 
 get_time() ->
   {ok, Username} = application:get_env(iot,username),
-  {ok, Host} = application:get_env(iot,host),
+  {ok, Domain} = application:get_env(iot,domain),
   HalfJid = <<Username/binary, <<"@">>/binary>>,
-  FullJid = <<HalfJid/binary,Host/binary>>,
-   gen_server:call(?NAME, {get_time, FullJid, Host}).
+  FullJid = <<HalfJid/binary,Domain/binary>>,
+   gen_server:call(?NAME, {get_time, FullJid, Domain}).
 
 register_handler(HandlerName, Handler) ->
   gen_server:call(?NAME, {register_handler, HandlerName, Handler}).
