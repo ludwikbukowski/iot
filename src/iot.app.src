@@ -17,7 +17,7 @@
    {username,<<"raspberrypi">>},
    {password,<<"raspberrypi">>},
    {domain,<<"example.net">>},
-   {host,<<"example.net">>},
+   {host,<<"ludwik.net">>},
    {resource,<<"">>}
   ]},
   {modules, []},

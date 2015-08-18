@@ -10,7 +10,7 @@
 #define MSG_SIZE 100
 
  //C 'Driver' to handle serial communication with UART.
-
+ // NOT USED
 
 
 int packet_n = 0;

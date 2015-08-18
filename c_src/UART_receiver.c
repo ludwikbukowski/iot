@@ -8,7 +8,8 @@
 #include <sys/ioctl.h>
 #include <pthread.h>
 #define MSG_SIZE 256
-
+#define MEASURE_LENGTH 5 // RXXX\r is 5 length long
+#define DATE_LENGTH 19 // 'YYYY/MM/DD HH:MM:SS'
  //C 'Driver' to handle serial communication with UART.
 
 
@@ -22,9 +23,17 @@ int packet_flag = 0;
 int uart_fd = -1;
 int erl_read = 0;
 int erl_write = 1;
+char time_buffer[19];
 
-
-
+// Prints Time formated as 'YYYY/MM/DD HH:MM:SS'
+void format_time(char * output){
+    time_t rawtime;
+    struct tm * timeinfo;
+    time ( &rawtime );
+    timeinfo = localtime ( &rawtime );
+    sprintf(output, "%02d/%02d/%02d %02d:%02d:%02d",
+    timeinfo->tm_mday, timeinfo->tm_mon + 1, timeinfo->tm_year + 1900, timeinfo->tm_hour, timeinfo->tm_min, timeinfo->tm_sec);
+}
 
 //SIGPIPE is send when reading end of the pipe gets closed, hence because Erlang's process termination.
 int catch(int sig){
@@ -115,9 +124,11 @@ int main(int argc, char * argv[]){
 		else
 		{
 			int count_erl;
+			format_time(time_buffer);
+			rx_echo[0] = MEASURE_LENGTH + DATE_LENGTH;
 			strcpy(rx_echo+1,rx_buffer);
-			rx_echo[0] = 5;
-			count_erl = write(erl_write,rx_echo,rx_length+1);
+			strcpy(rx_echo+1+MEASURE_LENGTH, time_buffer);
+			count_erl = write(erl_write,rx_echo,rx_length+1+DATE_LENGTH);
 			if(count_erl <=0){
 				close_driver();
 			}
