@@ -11,7 +11,6 @@
 -behavoiur(gen_server).
 -define(NAME, connection_server).
 -define(ERROR_LOGGER,my_error_logger).
--define(HOST, <<"example.net">>).
 -define(TIMER,timer).
 -define(TIMEOUT,3000).
 -include_lib("escalus/include/escalus.hrl").
@@ -41,9 +40,10 @@ connect() ->
 
 get_time() ->
   {ok, Username} = application:get_env(iot,username),
+  {ok, Host} = application:get_env(iot,host),
   HalfJid = <<Username/binary, <<"@">>/binary>>,
-  FullJid = <<HalfJid/binary,?HOST/binary>>,
-   gen_server:call(?NAME, {get_time, FullJid, ?HOST}).
+  FullJid = <<HalfJid/binary,Host/binary>>,
+   gen_server:call(?NAME, {get_time, FullJid, Host}).
 
 register_handler(HandlerName, Handler) ->
   gen_server:call(?NAME, {register_handler, HandlerName, Handler}).
