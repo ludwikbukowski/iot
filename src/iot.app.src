@@ -17,6 +17,7 @@
    {username,<<"raspberrypi">>},
    {password,<<"raspberrypi">>},
    {domain,<<"localhost">>},
+   {host,<<"example.net">>},
    {resource,<<"">>}
   ]},
   {modules, []},

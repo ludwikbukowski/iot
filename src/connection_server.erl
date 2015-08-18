@@ -19,7 +19,7 @@
 -include_lib("exml/include/exml.hrl").
 %% API
 -export([start_link/1, init/1, handle_call/3, handle_info/2]).
--export([connect/0, register_handler/2, unregister_handler/1, get_time/0, time_from_stanza/1]).
+-export([connect/0, register_handler/2, unregister_handler/1, get_time/0, time_from_stanza/1, user_spec/5]).
 
 start_link(_) ->
   gen_server:start_link(
@@ -35,8 +35,9 @@ connect() ->
   {ok, Username} = application:get_env(iot,username),
   {ok, Password} = application:get_env(iot,password),
   {ok, Domain} = application:get_env(iot,domain),
+  {ok, Host} = application:get_env(iot,host),
   {ok, Resource} = application:get_env(iot,resource),
-  gen_server:call(?NAME, {connect, Username, Password, Domain, Resource}).
+  gen_server:call(?NAME, {connect, Username, Password, Domain, Host, Resource}).
 
 get_time() ->
   {ok, Username} = application:get_env(iot,username),
@@ -52,8 +53,8 @@ unregister_handler(HandlerName) ->
 
 
 %% Handle Calls and casts
-handle_call({connect, Username, Password, Domain, Resource},_,Data) ->
-  Cfg = user_spec(Username, Domain, Password, Resource),
+handle_call({connect, Username, Password, Domain, Host, Resource},_,Data) ->
+  Cfg = user_spec(Username, Domain, Host, Password, Resource),
   MergedConf = merge_props([], Cfg),
   case escalus_connection:start(MergedConf) of
     {ok, Client, _, _} ->
@@ -102,10 +103,10 @@ handle_info({stanza, _, Stanza}, {Client, Handlers}) ->
 
 
 %% Internal functions
-user_spec(Username, Domain, Password, Resource) ->
+user_spec(Username, Domain, Host ,Password, Resource) ->
   [ {username, Username},
     {server, Domain},
-    {host, Domain},
+    {host, Host},
     {password, Password},
     {carbons, false},
     {stream_management, false},

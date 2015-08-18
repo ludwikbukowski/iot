@@ -14,6 +14,7 @@
 
 
 % Format of date for raspberrypi should be 'DD/MM/YYYY HH:MM:SS' Tzo and '+/- HH:MM' for Utc
+% ``shell``: udo date -s 'YYY/MM/DD HH:%% :47'; date -d '+02 hours +00 minutes
 change_time(Tzo, Utc) ->
   FormatedDate = reformat_tzo(Tzo),
       case application:get_env(iot,os) of
@@ -22,7 +23,7 @@ change_time(Tzo, Utc) ->
           ChangeDate = Prefix ++ add_quotes(FormatedDate),
           FormatedUtc = reformat_utc(Utc),
           Hours = lists:sublist(FormatedUtc, 3),
-          Minutes = lists:nth(FormatedUtc,1) ++ lists:sublist(FormatedUtc, 5,2),
+          Minutes = [lists:nth(1, FormatedUtc)] ++ lists:sublist(FormatedUtc, 5,2),
           Command = ChangeDate ++ "; date -d '" ++ Hours ++ " hours " ++ Minutes ++ " minutes'",
           os:cmd(Command);
         _ ->
@@ -43,8 +44,7 @@ reformat_tzo(Tzo) ->
       SlashedDate ++ " " ++Time;
     _ ->
   erlang:error(wrong_date_format)
-  end,
-  Tzo.
+  end.
 
 % Format of utc was <<"HH:MM">> and now is just "HH:MM"
 reformat_utc(Utc) ->
