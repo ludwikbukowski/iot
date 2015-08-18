@@ -16,7 +16,7 @@
    {os,raspberry},
    {username,<<"raspberrypi">>},
    {password,<<"raspberrypi">>},
-   {domain,<<"localhost">>},
+   {domain,<<"example.net">>},
    {host,<<"example.net">>},
    {resource,<<"">>}
   ]},
