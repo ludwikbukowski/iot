@@ -10,7 +10,7 @@
 -author("ludwikbukowski").
 -behaviour(gen_server).
 -export([start_link/1, init/1, handle_call/3, terminate/2, handle_info/2, code_change/3]).
--export([add_data/1, get_data/0, open_port/2, close_port/1, connect_to_mongoose/0, connect_to_mongoose/0]).
+-export([add_data/1, get_data/0, open_port/2, close_port/1, connect_to_mongoose/0, connect_to_mongoose/0, remove_data/1]).
 -define(FILE_C(),case application:get_env(iot,mocked) of {ok,true} -> code:priv_dir(iot)++"/driver_mock"; _->code:priv_dir(iot)++"/driver" end).
 -define(NAME, driver_manager).
 -define(CONNECTION_SERVER, connection_server).
@@ -49,6 +49,10 @@ add_data(Msg) ->
 get_data() ->
   gen_server:call(?NAME, getdata).
 
+-spec remove_data(integer())->{reply, list(), any()}.
+remove_data(Last) ->
+  gen_server:call(?NAME, {remove, Last}).
+
 -spec connect_to_mongoose() -> 'connected'.
 connect_to_mongoose() ->
   gen_server:call(?NAME, connect).
@@ -64,7 +68,7 @@ handle_call({msg,Msg},_,Data) ->
 
 handle_call({openport, Name, File, uart},_,Data) ->
   {ok,Pid}= supervisor:start_child(
-    zeus_supervisor,
+    apollo_supervisor,
     {Name,{driver_server,start_link,[Name, File]}, transient, 5000, worker, [driver_server]}),              %% Starting data is empty list of Ports
   {reply,{ok,Pid},Data};
 
@@ -80,13 +84,23 @@ handle_call({closeport,Name},_,Data) ->
     Reply -> {reply, {wrong_close, {replied, Reply}}, Data}
     catch
     exit:Exit ->
-      ok = supervisor:delete_child(zeus_supervisor,Name),
+      ok = supervisor:delete_child(apollo_supervisor,Name),
       {reply, {safe_close, Exit}, Data};
     Other:Reason -> {reply, {wrong_close, {Other, Reason}}}
   end;
                                                                              %% TODO not asynch... !
 handle_call(getdata,_,Data) ->
   {reply,Data,Data};
+
+handle_call({remove, _},_,[]) ->
+  {reply,empty_list,[]};
+handle_call({remove, Last},_,[]) when Last =< 0->
+  {reply,wrong_number,[]};
+handle_call({remove, Last},_,Data) when length(Data) < Last ->
+  {reply,too_less_elements,Data};
+handle_call({remove, Last},_,Data) ->
+  {Firsts, Lasts} = lists:split(Last, Data),
+  {reply,Firsts, Lasts};
 
 handle_call(_,From,Data) ->
   {reply,From,Data}.
