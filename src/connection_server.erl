@@ -67,7 +67,7 @@ handle_call({connect, Username, Password, Domain, Host, Resource},_,{SomeClient,
         end;
     _ ->
       ?ERROR_LOGGER:log_error({connection_server,cannot_connect}),
-      {stop, connection_server, {SomeClient, Dict}}
+      {stop, cannot_connect, {SomeClient, Dict}}
   end;
 
 handle_call({register_handler, HandlerName, Handler}, _, {Client, Handlers}) ->
@@ -101,7 +101,7 @@ handle_call(get_time, _, {Client, Handlers}) ->
   end;
 
 handle_call(save_time, _, Data) ->
-  {reply,{Utc, Tzo}, State} = ?MODULE:handle_call(get_time, self(), Data),
+  {reply,{Utc, Tzo}, State} = ?MODULE:handle_call(get_time, self(), Data),          %% I know Its ugly one. Id like to change it somehow
   os_functions:change_time(Tzo, Utc),
   {reply, {changed, Utc, Tzo}, State}.
 
@@ -155,7 +155,17 @@ time_from_stanza(Stanza = #xmlel{name = <<"iq">>, attrs = _, children = [Child]}
         _ -> no_timezone
       end;
         _ -> wrong_stanza
-    end.
+    end;
+% Received some other stanza than expected, so im waiting for MY time stanza. Looping and flushing all stanzas other than mine
+time_from_stanza(Some) ->
+  receive
+    {stanza, _, NewStanza} ->
+      time_from_stanza(NewStanza);
+    _ ->
+      erlang:exit({wrong_received_stanza, Some})
+  after ?TIMEOUT ->
+    erlang:exit(timeout)
+  end.
 
 
 

@@ -39,6 +39,8 @@ change_time(Tzo, Utc) ->
           Minutes = [lists:nth(1, FormatedUtc)] ++ lists:sublist(FormatedUtc, 5,2),
           Command = ChangeDate ++ ";sudo date -d '" ++ Hours ++ " hours " ++ Minutes ++ " minutes'",
           os:cmd(Command);
+        darwin ->
+          io:format("You cannot change time on Darwin, so I will just pretend that time is changed.~n");      %% I know its stupid...
         _ ->
           erlang:error(wrong_os)
   end.
