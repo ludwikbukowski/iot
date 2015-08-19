@@ -56,13 +56,13 @@ handle_call({senddata, Msg},_,Data) ->
   Reply = call_port(hd(Data),Msg),
   case Reply of
     {error,What,Why} ->
-      ?ERROR_LOGGER:log_error({What,Why}),
+      ?ERROR_LOGGER:log_error({driver_server, What,Why}),
       {stop,{What,Why},Data};
     {reply, ReplyMsg}->
       {ok, ReplyMsg}  = driver_manager:add_data(ReplyMsg),
       {reply,ReplyMsg,Data};
      Stuff->
-       ?ERROR_LOGGER:log_error({unknown,Stuff}),
+       ?ERROR_LOGGER:log_error({driver_server, unknown,Stuff}),
        {reply,{badreceive,Stuff},Data}
   end;
 
@@ -75,13 +75,13 @@ handle_call(closeport,_,Data) ->                                          % Clos
 
 %% Receive Data from Driver
 handle_info(Error = {'EXIT',Pid, _},Data) when is_pid(Pid) ->               % usual termination (eg by supervisor)
-  ?ERROR_LOGGER:log_error({normal_termination,Error}),
+  ?ERROR_LOGGER:log_error({driver_server, normal_termination,Error}),
   {stop,normal_termination,Data};
 handle_info(Error = {'EXIT',Port, _},Data) when is_port(Port) ->            %  termination by external drivers death
-  ?ERROR_LOGGER:log_error({driver_termination,Error}),
+  ?ERROR_LOGGER:log_error({driver_server, driver_termination,Error}),
   {stop,driver_termination,Data};
 handle_info(Error = {_,{exit_status,_}},Data) ->                           % Received exit_status Code. Im not terminating server, because there will be sent also signal "{'Exit', ...
-  ?ERROR_LOGGER:log_error(Error),
+  ?ERROR_LOGGER:log_error({driver_server, Error}),
   {noreply,Data};
 % Received data from sensor is sent to var_server
 handle_info(Msg,Data) ->

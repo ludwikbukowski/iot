@@ -66,7 +66,7 @@ handle_call({connect, Username, Password, Domain, Host, Resource},_,{SomeClient,
                end
         end;
     _ ->
-      ?ERROR_LOGGER:log_error({connection_server,cannot_connect}),
+      ?ERROR_LOGGER:log_error({connection_server,"I cannot connect to server"}),
       {stop, cannot_connect, {SomeClient, Dict}}
   end;
 
@@ -162,8 +162,10 @@ time_from_stanza(Some) ->
     {stanza, _, NewStanza} ->
       time_from_stanza(NewStanza);
     _ ->
+      ?ERROR_LOGGER:log_error({connection_server, "I was waiting for time stanza but received not stanza"}),
       erlang:exit({wrong_received_stanza, Some})
   after ?TIMEOUT ->
+    ?ERROR_LOGGER:log_error({connection_server, "I was waiting for time stanza, but never received one!"}),
     erlang:exit(timeout)
   end.
 

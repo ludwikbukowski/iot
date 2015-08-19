@@ -27,6 +27,7 @@ start_link() ->
 init([]) ->
     {ok, { {rest_for_one, 2, 2},
         [
+            {my_error_logger,{my_error_logger,start_link,[[]]},permanent,5000,worker,[my_error_logger]},      % Its more excercise than useful module
             {connection_server,{connection_server,start_link,[[]]},permanent,5000,worker,[connection_server]},      % To connect to mongoose server
             {apollo_supervisor,{apollo_sup,start_link,[]},permanent,5000,supervisor,[apollo_sup]}
         ]
