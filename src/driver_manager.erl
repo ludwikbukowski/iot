@@ -100,7 +100,7 @@ handle_call({remove, Last},_,Data) when length(Data) < Last ->
   {reply,too_less_elements,Data};
 handle_call({remove, Last},_,Data) ->
   {Firsts, Lasts} = lists:split(Last, Data),
-  {reply,Firsts, []};                               %% should be left LASTS
+  {reply,Firsts, Lasts};
 
 handle_call(_,From,Data) ->
   {reply,From,Data}.
