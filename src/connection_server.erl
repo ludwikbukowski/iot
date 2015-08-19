@@ -14,10 +14,9 @@
 -define(TIMER,timer).
 -define(TIMEOUT,3000).
 -include_lib("escalus/include/escalus.hrl").
--include_lib("escalus/include/escalus_xmlns.hrl").
--include_lib("exml/include/exml.hrl").
+-include_lib("include/iot_lib.hrl").
 %% API
--export([start_link/1, init/1, handle_call/3, handle_info/2]).
+-export([start_link/1, init/1, handle_call/3, handle_info/2, terminate/2, code_change/3]).
 -export([connect/0, register_handler/2, unregister_handler/1, get_time/0, time_from_stanza/1, user_spec/5]).
 
 start_link(_) ->
@@ -27,7 +26,7 @@ start_link(_) ->
     [], []).
 
 init(_) ->
-  {ok, {not_connected, []}}.
+  {ok, {not_connected, dict:new()}}.
 
 % Api
 connect() ->
@@ -54,16 +53,23 @@ unregister_handler(HandlerName) ->
 
 
 %% Handle Calls and casts
-handle_call({connect, Username, Password, Domain, Host, Resource},_,Data) ->
+handle_call({connect, Username, Password, Domain, Host, Resource},_,{SomeClient, Dict}) ->
   Cfg = user_spec(Username, Domain, Host, Password, Resource),
   MergedConf = merge_props([], Cfg),
   case escalus_connection:start(MergedConf) of
     {ok, Client, _, _} ->
       send_presence_available(Client),
-      {reply, {Client, dict:new()}, {Client, dict:new()}};
+      receive
+        {stanza, _, Stanza} -> case escalus_pred:is_presence(Stanza) of
+                 true ->
+                   {reply, {Client, Dict}, {Client, Dict}};
+                 _ ->
+                   {stop, {connection_wrong_receive, Stanza}, {SomeClient, Dict}}
+               end
+        end;
     _ ->
       ?ERROR_LOGGER:log_error({connection_server,cannot_connect}),
-      {stop, connection_server, Data}
+      {stop, connection_server, {SomeClient, Dict}}
   end;
 
 handle_call({register_handler, HandlerName, Handler}, _, {Client, Handlers}) ->
@@ -76,16 +82,11 @@ handle_call({unregister_handler, HandlerName}, _, {Client, Handlers}) ->
     {reply, not_found,{Client, Handlers}};
     _ ->
       NewHandlers = dict:erase(HandlerName, Handlers),
-      {reply, unregistered, NewHandlers}
+      {reply, unregistered, {Client, NewHandlers}}
   end;
 
 handle_call({get_time, From, To}, _, {Client, Handlers}) ->
-  Stanza = #xmlel{name = <<"iq">>,
-    attrs = [{<<"from">>,From},
-      {<<"type">>, <<"get">>},
-      {<<"id">>, <<"time_1">>},{<<"to">>,To}],
-    children = #xmlel{name = <<"time">>,
-      attrs = [{<<"xmlns">>, ?NS_TIME}]}},
+  Stanza = ?TIME_STANZA(From, To),
   escalus:send(Client, Stanza),
   receive
     {stanza, _, Reply} ->
@@ -97,8 +98,15 @@ handle_call({get_time, From, To}, _, {Client, Handlers}) ->
   end.
 
 handle_info({stanza, _, Stanza}, {Client, Handlers}) ->
-  handle_stanza(Stanza, Handlers),
+  ReturnedAcc = handle_stanza(Stanza, Handlers),                      %%I Should restore it somewhere
   {noreply, {Client, Handlers}}.
+
+%% Other
+terminate(_, _) ->
+  ok.
+
+code_change(_, _, _) ->
+  error(not_implemented).
 
 
 

@@ -49,6 +49,7 @@ add_data(Msg) ->
 get_data() ->
   gen_server:call(?NAME, getdata).
 
+-spec connect_to_mongoose() -> 'connected'.
 connect_to_mongoose() ->
   gen_server:call(?NAME, connect).
 
