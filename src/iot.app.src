@@ -13,11 +13,10 @@
    ]},
   {env,[
    {mocked,true},
-   {os,raspberry},
    {username,<<"raspberrypi">>},
    {password,<<"raspberrypi">>},
-   {domain,<<"example.net">>},
-   {host,<<"ludwik.net">>},
+   {domain,<<"iot.net">>},
+   {host,<<"iot.net">>},  %% Need to add host to /etc/hosts
    {resource,<<"">>}
   ]},
   {modules, []},

@@ -9,16 +9,29 @@
 -module(os_functions).
 -author("ludwikbukowski").
 -define(DATE_LENGTH, 20).
-%% API
--export([add_quotes/1, change_time/2, reformat_tzo/1, reformat_utc/1]).
+-type os() :: 'linux' | 'darwin'.
+-export([ change_time/2, detect_os/0]).
 
+
+%% API
+-spec detect_os() -> os().
+detect_os() ->
+  Uname = os:cmd("uname"),
+  case Uname of
+    "Linux\n" ->
+      linux;
+    "Darwin\n" ->
+      darwin;
+    _ ->
+      unknown
+  end.
 
 % Format of date for raspberrypi should be 'DD/MM/YYYY HH:MM:SS' Tzo and '+/- HH:MM' for Utc
 % ``shell``: udo date -s 'YYY/MM/DD HH:MM:SS'; date -d '+HH hours +MM minutes
 change_time(Tzo, Utc) ->
   FormatedDate = reformat_tzo(Tzo),
-      case application:get_env(iot,os) of
-        {ok, raspberry} ->
+      case os_functions:detect_os() of
+        linux ->
           Prefix = "sudo date -s ",
           ChangeDate = Prefix ++ add_quotes(FormatedDate),
           FormatedUtc = reformat_utc(Utc),

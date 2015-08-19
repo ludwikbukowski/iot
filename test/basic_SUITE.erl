@@ -25,16 +25,23 @@ groups()->[{communication,[sequence],[check_port_test,driver_receive_test,var_re
 all()->[simple_test,{group,communication}].
 
 
-%% Init
+%% Init (Its bad to start all application but yet didnt figure out how to do in other way with rebar3)
 init_per_suite(Config)->
+  ok = application:start(exml),
+  ok = application:start(escalus),
+  ok = application:start(base16),
+  ok = application:start(sasl),
   ok = application:start(meck),
   ok = application:start(iot),
   Config.
 
 end_per_suite(_)->
   ok = application:stop(iot),
-  ok = application:stop(meck).
-
+  ok = application:stop(meck),
+  ok = application:stop(sasl),
+  ok = application:stop(base16),
+  ok = application:stop(escalus),
+  ok = application:stop(exml).
 
 init_per_group(communication,Config)->
   meck:new(?MANAGER_S,[unstick,passthrough]),
