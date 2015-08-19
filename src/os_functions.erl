@@ -37,7 +37,7 @@ change_time(Tzo, Utc) ->
           FormatedUtc = reformat_utc(Utc),
           Hours = lists:sublist(FormatedUtc, 3),
           Minutes = [lists:nth(1, FormatedUtc)] ++ lists:sublist(FormatedUtc, 5,2),
-          Command = ChangeDate ++ "; date -d '" ++ Hours ++ " hours " ++ Minutes ++ " minutes'",
+          Command = ChangeDate ++ ";sudo date -d '" ++ Hours ++ " hours " ++ Minutes ++ " minutes'",
           os:cmd(Command);
         _ ->
           erlang:error(wrong_os)
