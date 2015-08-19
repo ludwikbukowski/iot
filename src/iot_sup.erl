@@ -27,9 +27,9 @@ start_link() ->
 init([]) ->
     {ok, { {rest_for_one, 2, 2},
         [
-
             {connection_server,{connection_server,start_link,[[]]},permanent,5000,worker,[connection_server]},      % To connect to mongoose server
-            {apollo_supervisor,{apollo_sup,start_link,[]},permanent,5000,supervisor,[apollo_sup]}
+            {apollo_supervisor,{apollo_sup,start_link,[]},permanent,5000,supervisor,[apollo_sup]},
+            {hermes_sender,{hermes_sender,start_link,[]},permanent,5000,worker,[hermes_sender]}
         ]
          }
     }.

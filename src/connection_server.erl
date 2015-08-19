@@ -17,7 +17,7 @@
 -include_lib("include/iot_lib.hrl").
 %% API
 -export([start_link/1, init/1, handle_call/3, handle_info/2, terminate/2, code_change/3]).
--export([connect/0, register_handler/2, unregister_handler/1, get_time/0, time_from_stanza/1, user_spec/5, save_time/0]).
+-export([connect/0, register_handler/2, unregister_handler/1, get_time/0, time_from_stanza/1, user_spec/5, save_time/0, send_data/1]).
 
 start_link(_) ->
   gen_server:start_link(
@@ -42,6 +42,10 @@ get_time() ->
 
 save_time() ->
   gen_server:call(?NAME, save_time).
+
+send_data(Data) ->
+  io:format("Sending data ~p~n",[Data]),
+  not_implemented.
 
 register_handler(HandlerName, Handler) ->
   gen_server:call(?NAME, {register_handler, HandlerName, Handler}).
