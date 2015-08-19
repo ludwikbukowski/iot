@@ -17,7 +17,7 @@
 -include_lib("include/iot_lib.hrl").
 %% API
 -export([start_link/1, init/1, handle_call/3, handle_info/2, terminate/2, code_change/3]).
--export([connect/0, register_handler/2, unregister_handler/1, get_time/0, time_from_stanza/1, user_spec/5]).
+-export([connect/0, register_handler/2, unregister_handler/1, get_time/0, time_from_stanza/1, user_spec/5, save_time/0]).
 
 start_link(_) ->
   gen_server:start_link(
@@ -38,12 +38,10 @@ connect() ->
   gen_server:call(?NAME, {connect, Username, Password, Domain, Host, Resource}).
 
 get_time() ->
-  {ok, Username} = application:get_env(iot,username),
-  {ok, Domain} = application:get_env(iot,domain),
-  {ok, Host} = application:get_env(iot,host),
-  HalfJid = <<Username/binary, <<"@">>/binary>>,
-  FullJid = <<HalfJid/binary,Domain/binary>>,
-   gen_server:call(?NAME, {get_time, FullJid, Host}).
+   gen_server:call(?NAME, get_time).
+
+save_time() ->
+  gen_server:call(?NAME, save_time).
 
 register_handler(HandlerName, Handler) ->
   gen_server:call(?NAME, {register_handler, HandlerName, Handler}).
@@ -85,8 +83,13 @@ handle_call({unregister_handler, HandlerName}, _, {Client, Handlers}) ->
       {reply, unregistered, {Client, NewHandlers}}
   end;
 
-handle_call({get_time, From, To}, _, {Client, Handlers}) ->
-  Stanza = ?TIME_STANZA(From, To),
+handle_call(get_time, _, {Client, Handlers}) ->
+  {ok, Username} = application:get_env(iot,username),
+  {ok, Domain} = application:get_env(iot,domain),
+  {ok, Host} = application:get_env(iot,host),
+  HalfJid = <<Username/binary, <<"@">>/binary>>,
+  FullJid = <<HalfJid/binary,Domain/binary>>,
+  Stanza = ?TIME_STANZA(FullJid, Host),
   escalus:send(Client, Stanza),
   receive
     {stanza, _, Reply} ->
@@ -95,7 +98,12 @@ handle_call({get_time, From, To}, _, {Client, Handlers}) ->
     after
       ?TIMEOUT ->
         {reply, timeout, {Client, Handlers}}
-  end.
+  end;
+
+handle_call(save_time, _, Data) ->
+  {reply,{Utc, Tzo}, State} = ?MODULE:handle_call(get_time, self(), Data),
+  os_functions:change_time(Tzo, Utc),
+  {reply, {changed, Utc, Tzo}, State}.
 
 handle_info({stanza, _, Stanza}, {Client, Handlers}) ->
   ReturnedAcc = handle_stanza(Stanza, Handlers),                      %%I Should restore it somewhere
