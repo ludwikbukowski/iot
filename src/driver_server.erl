@@ -70,8 +70,7 @@ handle_call(getport,_,Data) ->
   {reply,Data,Data};
 
 handle_call(closeport,_,Data) ->                                          % Close port
-  port_close(Data),
-  {stop,normal,[]}.
+  {stop,normal,Data}.
 
 handle_info(Error = {'EXIT',Port, _},_) when is_port(Port) ->            %  termination by external drivers death
    ?ERROR_LOGGER:log_error({driver_server, port_termination, Error}),
