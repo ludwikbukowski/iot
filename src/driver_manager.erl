@@ -73,7 +73,7 @@ connect_to_mongoose() ->
 
 %% Handle Calls and casts
 handle_call({msg,Msg},_,Data) ->
-  {reply,{ok,Msg},Data ++ [Msg]};
+  {reply,{ok,Msg},[Msg] ++ Data};
 
 handle_call({openport, Name, File, uart},_,Data) ->
   {ok,Pid}= supervisor:start_child(

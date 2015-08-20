@@ -10,8 +10,8 @@
 -author("ludwikbukowski").
 -define(MANAGER_S, driver_manager).
 -define(CONNECTION_S, connection_server).
--define(SLEEP_TIME, 1000).
--define(DATA_PORTION, 10).
+-define(SLEEP_TIME, 1000).     %% 10 Hz
+-define(DATA_PORTION, 1).
 %% API
 -export([start_link/0, init/1]).
 
@@ -27,5 +27,11 @@ init(_) ->
 loop() ->
   timer:sleep(?SLEEP_TIME),
   DataList = ?MANAGER_S:remove_data(?DATA_PORTION),
-  ?CONNECTION_S:send_data(DataList),
+  ConsumedList = consume(DataList),
+  ?CONNECTION_S:send_data(ConsumedList),
   loop().
+
+
+%% For example linear regression for bunch of measures
+consume(Data) ->
+  Data.
