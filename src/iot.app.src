@@ -13,6 +13,7 @@
    ]},
   {env,[
    {mocked,true},
+   {refresh_time,true},
    {username,<<"raspberrypi">>},
    {password,<<"raspberrypi">>},
    {domain,<<"iot.net">>},

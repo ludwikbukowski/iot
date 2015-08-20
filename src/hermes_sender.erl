@@ -21,7 +21,11 @@ start_link() ->
   {ok, Pid}.
 
 init(_) ->
+%%   Make connection
+  loop().
+
+loop() ->
   timer:sleep(?SLEEP_TIME),
   DataList = ?MANAGER_S:remove_data(?DATA_PORTION),
   ?CONNECTION_S:send_data(DataList),
-  init([]).
+  loop().

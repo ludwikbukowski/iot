@@ -10,10 +10,11 @@
 -author("ludwikbukowski").
 -behaviour(gen_server).
 -export([start_link/1, init/1, handle_call/3, terminate/2, handle_info/2, code_change/3]).
--export([add_data/1, get_data/0, open_port/2, close_port/1, connect_to_mongoose/0, connect_to_mongoose/0, remove_data/1]).
+-export([add_data/1, get_data/0, open_port/2, close_port/1, connect_to_mongoose/0, connect_to_mongoose/0, remove_data/1, open_sender/0, close_sender/0]).
 -define(FILE_C(),case application:get_env(iot,mocked) of {ok,true} -> code:priv_dir(iot)++"/driver_mock"; _->code:priv_dir(iot)++"/driver" end).
 -define(NAME, driver_manager).
 -define(CONNECTION_SERVER, connection_server).
+-define(SENDER, hermes_sender).
 -export_type([sensor_type/0, close_type/0]).
 -type sensor_type() :: 'uart' | atom().
 -type close_type() :: wrong_close | safe_close.
@@ -40,6 +41,14 @@ open_port(Name, Option) ->
 -spec close_port(atom()) -> {reply, {close_type(), any()}, any()}.
 close_port(Name) ->
   gen_server:call(?NAME, {closeport, Name}).
+
+-spec open_sender() -> {ok, pid()}.
+open_sender() ->
+  gen_server:call(?NAME, opensender).
+
+-spec close_sender() -> 'safe_close'.
+close_sender() ->
+  gen_server:call(?NAME, closesender).
 
 -spec add_data(any()) -> {reply, {ok, any()}, any()}.
 add_data(Msg) ->
@@ -69,14 +78,25 @@ handle_call({msg,Msg},_,Data) ->
 handle_call({openport, Name, File, uart},_,Data) ->
   {ok,Pid}= supervisor:start_child(
     apollo_supervisor,
-    {Name,{driver_server,start_link,[Name, File]}, transient, 5000, worker, [driver_server]}),              %% Starting data is empty list of Ports
+    {Name,{driver_server,start_link,[Name, File]}, transient, 5000, worker, [driver_server]}),
   {reply,{ok,Pid},Data};
 
 handle_call(connect,_,Data) ->
   _ = ?CONNECTION_SERVER:connect(),
   {reply,connected,Data};
 
-handle_call({openport,_,_,_},_,Data) ->                                                            %% Override to other options
+handle_call(opensender,_,Data) ->
+  {ok,Pid}= supervisor:start_child(
+    zeus_supervisor,
+    {?SENDER,{?SENDER,start_link,[]}, transient, 5000, worker, [?SENDER]}),
+  {reply,{ok,Pid},Data};
+
+handle_call(closesender,_,Data) ->
+  ok = supervisor:terminate_child(zeus_supervisor,?SENDER),
+  ok = supervisor:delete_child(zeus_supervisor,?SENDER),
+  {reply, safe_close, Data};
+
+handle_call({openport,_,_,_},_,Data) ->
   {reply, unknown_option, Data};
 
 handle_call({closeport,Name},_,Data) ->
@@ -88,7 +108,7 @@ handle_call({closeport,Name},_,Data) ->
       {reply, {safe_close, Exit}, Data};
     Other:Reason -> {reply, {wrong_close, {Other, Reason}}}
   end;
-                                                                             %% TODO not asynch... !
+
 handle_call(getdata,_,Data) ->
   {reply,Data,Data};
 

@@ -25,12 +25,17 @@ start_link() ->
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
   % First, ask Connection_Server for Time
-  connection_server:connect(),
-  connection_server:save_time(),
+  case application:get_env(iot,refresh_time) of
+    {ok, true} ->
+      connection_server:connect(),
+      connection_server:save_time();
+    _ ->
+      ok
+  end,
   {ok, { {one_for_one, 2, 2},
     [
       {driver_manager,{driver_manager,start_link,[[]]},permanent,5000,worker,[driver_manager]},
-  {my_error_logger,{my_error_logger,start_link,[[]]},permanent,5000,worker,[my_error_logger]}      % Its more excercise than useful module
+      {my_error_logger,{my_error_logger,start_link,[[]]},permanent,5000,worker,[my_error_logger]}      % Its more excercise than useful module
     ]
   }
   }.

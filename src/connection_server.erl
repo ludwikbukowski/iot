@@ -15,9 +15,9 @@
 -define(TIMEOUT,3000).
 -include_lib("escalus/include/escalus.hrl").
 -include_lib("include/iot_lib.hrl").
-%% API
--export([start_link/1, init/1, handle_call/3, handle_info/2, terminate/2, code_change/3]).
--export([connect/0, register_handler/2, unregister_handler/1, get_time/0, time_from_stanza/1, user_spec/5, save_time/0, send_data/1]).
+-export([start_link/1, init/1, handle_call/3, handle_info/2, terminate/2, code_change/3, stop/0]).
+-export([connect/0, register_handler/2, unregister_handler/1, get_time/0, save_time/0, send_data/1, close_connection/0]).
+-record(connection_state, {client , handlers}).
 
 start_link(_) ->
   gen_server:start_link(
@@ -26,7 +26,8 @@ start_link(_) ->
     [], []).
 
 init(_) ->
-  {ok, {not_connected, dict:new()}}.
+  process_flag(trap_exit, true),
+  {ok, #connection_state{client = not_connected, handlers = dict:new()}}.
 
 % Api
 connect() ->
@@ -36,6 +37,9 @@ connect() ->
   {ok, Host} = application:get_env(iot,host),
   {ok, Resource} = application:get_env(iot,resource),
   gen_server:call(?NAME, {connect, Username, Password, Domain, Host, Resource}).
+
+close_connection() ->
+  gen_server:call(?NAME, close_connection).
 
 get_time() ->
    gen_server:call(?NAME, get_time).
@@ -53,9 +57,15 @@ register_handler(HandlerName, Handler) ->
 unregister_handler(HandlerName) ->
   gen_server:call(?NAME, {unregister_handler, HandlerName}).
 
+stop() ->
+  gen_server:call(?NAME, stop).
+
 
 %% Handle Calls and casts
-handle_call({connect, Username, Password, Domain, Host, Resource},_,{SomeClient, Dict}) ->
+handle_call(stop,_ , State) ->
+  {stop, stopped_by_client, State};
+
+handle_call({connect, Username, Password, Domain, Host, Resource},_,State) ->
   Cfg = user_spec(Username, Domain, Host, Password, Resource),
   MergedConf = merge_props([], Cfg),
   case escalus_connection:start(MergedConf) of
@@ -64,56 +74,61 @@ handle_call({connect, Username, Password, Domain, Host, Resource},_,{SomeClient,
       receive
         {stanza, _, Stanza} -> case escalus_pred:is_presence(Stanza) of
                  true ->
-                   {reply, {Client, Dict}, {Client, Dict}};
+                   {reply, State#connection_state{client = Client}, State#connection_state{client = Client}};
                  _ ->
-                   {stop, {connection_wrong_receive, Stanza}, {SomeClient, Dict}}
+                   {stop, {connection_wrong_receive, Stanza}, State}
                end
         end;
     _ ->
-   %   ?ERROR_LOGGER:log_error({connection_server,"I cannot connect to server"}),
-      {stop, cannot_connect, {SomeClient, Dict}}
+      {stop, cannot_connect, State}
   end;
 
-handle_call({register_handler, HandlerName, Handler}, _, {Client, Handlers}) ->
-  NewHandlers = dict:append(HandlerName, Handler, Handlers),
-  {reply, registered , {Client, NewHandlers}};
+handle_call(close_connection, _, State = #connection_state{client = Client}) ->
+  escalus_connection:stop(Client),
+  {reply, closed_connection ,State};
 
-handle_call({unregister_handler, HandlerName}, _, {Client, Handlers}) ->
+handle_call({register_handler, HandlerName, Handler}, _, State = #connection_state{handlers = Handlers}) ->
+  NewHandlers = dict:append(HandlerName, Handler, Handlers),
+  {reply, registered , State#connection_state {handlers = NewHandlers}};
+
+handle_call({unregister_handler, HandlerName}, _, State = #connection_state{handlers = Handlers}) ->
   case dict:find(HandlerName, Handlers) of
     error ->
-    {reply, not_found,{Client, Handlers}};
+    {reply, not_found, State};
     _ ->
       NewHandlers = dict:erase(HandlerName, Handlers),
-      {reply, unregistered, {Client, NewHandlers}}
+      {reply, unregistered, State#connection_state{handlers = NewHandlers} }
   end;
 
-handle_call(get_time, _, {Client, Handlers}) ->
-  {ok, Username} = application:get_env(iot,username),
-  {ok, Domain} = application:get_env(iot,domain),
-  {ok, Host} = application:get_env(iot,host),
-  HalfJid = <<Username/binary, <<"@">>/binary>>,
-  FullJid = <<HalfJid/binary,Domain/binary>>,
-  Stanza = ?TIME_STANZA(FullJid, Host),
-  escalus:send(Client, Stanza),
-  receive
-    {stanza, _, Reply} ->
-      ResponseTime = time_from_stanza(Reply),
-      {reply, ResponseTime, {Client, Handlers}}
-    after
-      ?TIMEOUT ->
-        {reply, timeout, {Client, Handlers}}
+handle_call(get_time, _, State = #connection_state{client = Client}) ->
+  case time_request(Client) of
+    {time, Time} ->
+      {reply, Time ,State};
+    timeout ->
+      {stop, connection_timeout, State}
   end;
 
-handle_call(save_time, _, Data) ->
-  {reply,{Utc, Tzo}, State} = ?MODULE:handle_call(get_time, self(), Data),          %% I know Its ugly one. Id like to change it somehow
-  os_functions:change_time(Tzo, Utc),
-  {reply, {changed, Utc, Tzo}, State}.
 
-handle_info({stanza, _, Stanza}, {Client, Handlers}) ->
+handle_call(save_time, _, State = #connection_state{client = Client}) ->
+  case time_request(Client) of
+    {time, Time} ->
+      {Utc, Tzo} = Time,
+      os_functions:change_time(Tzo, Utc),
+      {reply, {changed, Utc, Tzo}, State};
+    timeout ->
+      {reply, connection_timeout, State}
+  end.
+
+handle_info({stanza, _, Stanza}, State = #connection_state{handlers = Handlers}) ->
   ReturnedAcc = handle_stanza(Stanza, Handlers),                      %%I Should restore it somewhere
-  {noreply, {Client, Handlers}}.
+  {noreply, State}.
 
 %% Other
+
+terminate(_, #connection_state{client = Client = #client{}}) ->
+  escalus_connection:stop(Client),
+  ok;
+
 terminate(_, _) ->
   ok.
 
@@ -160,17 +175,33 @@ time_from_stanza(Stanza = #xmlel{name = <<"iq">>, attrs = _, children = [Child]}
       end;
         _ -> wrong_stanza
     end;
+
 % Received some other stanza than expected, so im waiting for MY time stanza. Looping and flushing all stanzas other than mine
 time_from_stanza(Some) ->
   receive
     {stanza, _, NewStanza} ->
       time_from_stanza(NewStanza);
     _ ->
-     % ?ERROR_LOGGER:log_error({connection_server, "I was waiting for time stanza but received not stanza"}),
       erlang:exit({wrong_received_stanza, Some})
   after ?TIMEOUT ->
-    %?ERROR_LOGGER:log_error({connection_server, "I was waiting for time stanza, but never received one!"}),
     erlang:exit(timeout)
+  end.
+
+time_request(Client) ->
+  {ok, Username} = application:get_env(iot,username),
+  {ok, Domain} = application:get_env(iot,domain),
+  {ok, Host} = application:get_env(iot,host),
+  HalfJid = <<Username/binary, <<"@">>/binary>>,
+  FullJid = <<HalfJid/binary,Domain/binary>>,
+  Stanza = ?TIME_STANZA(FullJid, Host),
+  escalus:send(Client, Stanza),
+  receive
+    {stanza, _, Reply} ->
+      ResponseTime = time_from_stanza(Reply),
+      {time, ResponseTime}
+  after
+    ?TIMEOUT ->
+      timeout
   end.
 
 

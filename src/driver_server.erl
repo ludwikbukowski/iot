@@ -33,7 +33,7 @@ init(Driver) ->
               end,
   Opts = [stderr_to_stdout,binary, use_stdio, exit_status, {args, Arguments}, ?PACKET],
   Port = open_port({spawn_executable,Driver},Opts),
-  {ok, [Port]}.
+  {ok, Port}.
 
 
 % API
@@ -53,7 +53,7 @@ send_data(Name,Msg) ->
 
 %% Handle Calls and casts
 handle_call({senddata, Msg},_,Data) ->
-  Reply = call_port(hd(Data),Msg),
+  Reply = call_port(Data,Msg),
   case Reply of
     {error,What,Why} ->
       ?ERROR_LOGGER:log_error({driver_server, What,Why}),
@@ -67,21 +67,17 @@ handle_call({senddata, Msg},_,Data) ->
   end;
 
 handle_call(getport,_,Data) ->
-  {reply,hd(Data),Data};
+  {reply,Data,Data};
 
 handle_call(closeport,_,Data) ->                                          % Close port
-  port_close(hd(Data)),
+  port_close(Data),
   {stop,normal,[]}.
 
-%% Receive Data from Driver
-handle_info(Error = {'EXIT',Pid, _},Data) when is_pid(Pid) ->               % usual termination (eg by supervisor)
-  ?ERROR_LOGGER:log_error({driver_server, normal_termination,Error}),
-  {stop,normal_termination,Data};
-handle_info(Error = {'EXIT',Port, _},Data) when is_port(Port) ->            %  termination by external drivers death
-  ?ERROR_LOGGER:log_error({driver_server, driver_termination,Error}),
-  {stop,driver_termination,Data};
-handle_info(Error = {_,{exit_status,_}},Data) ->                           % Received exit_status Code. Im not terminating server, because there will be sent also signal "{'Exit', ...
-  ?ERROR_LOGGER:log_error({driver_server, Error}),
+handle_info(Error = {'EXIT',Port, _},_) when is_port(Port) ->            %  termination by external drivers death
+   ?ERROR_LOGGER:log_error({driver_server, port_termination, Error}),
+  {stop,driver_termination,[]};
+handle_info(Error = {_,{exit_status,_}},Data) ->                           % Received exit_status Code. Im not terminating server, because there will be sent also signal "{'Exit', Port ...
+   ?ERROR_LOGGER:log_error({driver_server, Error}),
   {noreply,Data};
 % Received data from sensor is sent to var_server
 handle_info(Msg,Data) ->
@@ -89,7 +85,11 @@ handle_info(Msg,Data) ->
   {noreply,Data}.
 
 %% Other
-terminate(_, _) ->
+terminate(_, []) ->
+  ok;
+terminate(_, Port) ->
+  true = port_close(Port),
+  ?ERROR_LOGGER:log_error({driver_server, normal_termination}),
   ok.
 
 code_change(_, _, _) ->
