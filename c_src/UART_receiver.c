@@ -111,7 +111,7 @@ int main(int argc, char * argv[]){
 
 
 
-
+    fsync(uart_fd);
 	while(1){
 
 		unsigned char rx_buffer[MSG_SIZE];
