@@ -17,7 +17,7 @@
 -define(START, 2).
 -behaviour(gen_server).
 %% API
--export([start_link/0, init/0, handle_info/2, format_and_send/0, terminate/3]).
+-export([start_link/0, init/1, handle_info/2, format_and_send/0, terminate/2]).
 
 
 start_link() ->
@@ -26,23 +26,23 @@ start_link() ->
     hermes_sender,
     [], []).
 
-init() ->
+init(_) ->
   self() ! send,
   {ok, self()}.
 
 handle_info(send, Pid) ->
-  erlang:send_after(?SLEEP_TIME, Pid, send, []),
-  format_and_send,
+  erlang:send_after(?SLEEP_TIME, Pid, send),
+  format_and_send(),
   {noreply, Pid};
 
 handle_info(_, Pid) ->
   {stop, wrong_receive, Pid}.
 
-terminate(_,_,_) ->
+terminate(_,_) ->
   ok.
 
 
-
+%% Internal functions
 format_and_send() ->
   DataList = ?MANAGER_S:remove_data(?DATA_PORTION),
   AdditionalFilter = fun(Msg) ->
