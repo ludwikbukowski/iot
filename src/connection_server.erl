@@ -14,6 +14,7 @@
 -define(ERROR_LOGGER,my_error_logger).
 -define(TIMER,timer).
 -define(TIMEOUT,3000).
+-define(RECEIVER,<<"mac@iot.net">>).
 -include_lib("escalus/include/escalus.hrl").
 -include_lib("include/iot_lib.hrl").
 -export([start_link/1, init/1, handle_call/3, handle_info/2, terminate/2, code_change/3, stop/0]).
@@ -78,7 +79,7 @@ handle_call({createnode, NodeName}, _, #connection_state{client = Client} = Stat
 
 handle_call({senddata, Data}, _, #connection_state{client = Client} = State) ->
   io:format("Sending data ~p~n",[Data]),
-  escalus_connection:send(Client, escalus_stanza:chat_to(<<"mac@iot.net">>, Data)),
+  escalus_connection:send(Client, escalus_stanza:chat_to(?RECEIVER, Data)),
   {reply, sent, State};
 
 handle_call({connect, Username, Password, Domain, Host, Resource},_,State) ->

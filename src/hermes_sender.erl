@@ -12,22 +12,38 @@
 -define(CONNECTION_S, connection_server).
 -define(SLEEP_TIME, 200).     %% 10 Hz
 -define(DATA_PORTION, 1).
+-define(NAME, hermes_sender).
 -define(CM, 2.56).
 -define(START, 2).
+-behaviour(gen_server).
 %% API
--export([start_link/0, init/1]).
+-export([start_link/0, init/0, handle_info/2, format_and_send/0, terminate/3]).
 
 
 start_link() ->
-  Pid = spawn(?MODULE, init, [[]]),
-  {ok, Pid}.
+  gen_server:start_link(
+    {local,?NAME},
+    hermes_sender,
+    [], []).
 
-init(_) ->
-%%   Make connection
-  loop().
+init() ->
+  self() ! send,
+  {ok, self()}.
 
-loop() ->
-  timer:sleep(?SLEEP_TIME),
+handle_info(send, Pid) ->
+  erlang:send_after(?SLEEP_TIME, Pid, send, []),
+  format_and_send,
+  {noreply, Pid};
+
+handle_info(_, Pid) ->
+  {stop, wrong_receive, Pid}.
+
+terminate(_,_,_) ->
+  ok.
+
+
+
+format_and_send() ->
   DataList = ?MANAGER_S:remove_data(?DATA_PORTION),
   AdditionalFilter = fun(Msg) ->
     Distance = inch_to_cm(extract_distance(Msg)),
@@ -37,8 +53,7 @@ loop() ->
   ConsumedList = filter_list(DataList, AdditionalFilter),
   R = io_lib:format("~p",[ConsumedList]),
   FormatedList = lists:flatten(R),
-  ?CONNECTION_S:send_data(FormatedList),
-  loop().
+  ?CONNECTION_S:send_data(FormatedList).
 
 
 %% For example linear regression for bunch of measures
