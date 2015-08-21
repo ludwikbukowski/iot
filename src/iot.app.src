@@ -12,7 +12,7 @@
      escalus
    ]},
   {env,[
-   {mocked,false},
+   {mocked,true},
    {refresh_time,true},
    {username,<<"raspberrypi">>},
    {password,<<"raspberrypi">>},

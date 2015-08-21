@@ -6,6 +6,7 @@
 %%% @end
 %%% Created : 17. Aug 2015 10:35 AM
 %%%-------------------------------------------------------------------
+
 -module(connection_server).
 -author("ludwikbukowski").
 -behavoiur(gen_server).
@@ -16,7 +17,7 @@
 -include_lib("escalus/include/escalus.hrl").
 -include_lib("include/iot_lib.hrl").
 -export([start_link/1, init/1, handle_call/3, handle_info/2, terminate/2, code_change/3, stop/0]).
--export([connect/0, register_handler/2, unregister_handler/1, get_time/0, save_time/0, send_data/1, close_connection/0]).
+-export([connect/0, register_handler/2, unregister_handler/1, get_time/0, save_time/0, send_data/1, close_connection/0, create_node/1]).
 -record(connection_state, {client , handlers}).
 
 start_link(_) ->
@@ -48,14 +49,16 @@ save_time() ->
   gen_server:call(?NAME, save_time).
 
 send_data(Data) ->
-  io:format("Sending data ~p~n",[Data]),
-  not_implemented.
+  gen_server:call(?NAME,{senddata, Data}).
 
 register_handler(HandlerName, Handler) ->
   gen_server:call(?NAME, {register_handler, HandlerName, Handler}).
 
 unregister_handler(HandlerName) ->
   gen_server:call(?NAME, {unregister_handler, HandlerName}).
+
+create_node(NodeName) ->
+  gen_server:call(?NAME, {createnode, NodeName}).
 
 stop() ->
   gen_server:call(?NAME, stop).
@@ -64,6 +67,19 @@ stop() ->
 %% Handle Calls and casts
 handle_call(stop,_ , State) ->
   {stop, stopped_by_client, State};
+
+handle_call({createnode, NodeName}, _, #connection_state{client = Client} = State) ->
+  {ok, Host}  = application:get_env(iot, host),
+  {ok, Username}  = application:get_env(iot, username),
+  {true, _RecvdStanza} = pubsub_tools:create_node(Username,
+    Host,
+    NodeName),
+  {reply, _RecvdStanza,State};
+
+handle_call({senddata, Data}, _, #connection_state{client = Client} = State) ->
+  io:format("Sending data ~p~n",[Data]),
+  escalus_connection:send(Client, escalus_stanza:chat_to(mac, Data)),
+  {reply, sent, State};
 
 handle_call({connect, Username, Password, Domain, Host, Resource},_,State) ->
   Cfg = user_spec(Username, Domain, Host, Password, Resource),
