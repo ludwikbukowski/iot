@@ -37,8 +37,10 @@ change_time(Tzo, Utc) ->
           FormatedUtc = reformat_utc(Utc),
           Hours = lists:sublist(FormatedUtc, 3),
           Minutes = [lists:nth(1, FormatedUtc)] ++ lists:sublist(FormatedUtc, 5,2),
-          Command = ChangeDate ++ ";sudo date -d '" ++ Hours ++ " hours " ++ Minutes ++ " minutes'",
-          os:cmd(Command);
+          Command = ChangeDate,
+          os:cmd(Command),
+          Offset = os:cmd("sudo date -d '" ++ Hours ++ " hours " ++ Minutes ++ " minutes'"),
+          os:cmd("sudo date -s '"++Offset++"'");                                                            %% At this time have no better idea how to do it another way
         darwin ->
           io:format("*******************~n"),
           io:format("You cannot change time on Darwin, so I will just pretend that time is changed.~n"),      %% I know its stupid...

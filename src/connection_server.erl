@@ -78,7 +78,7 @@ handle_call({createnode, NodeName}, _, #connection_state{client = Client} = Stat
 
 handle_call({senddata, Data}, _, #connection_state{client = Client} = State) ->
   io:format("Sending data ~p~n",[Data]),
-  escalus_connection:send(Client, escalus_stanza:chat_to(mac, Data)),
+  escalus_connection:send(Client, escalus_stanza:chat_to(<<"mac@iot.net">>, Data)),
   {reply, sent, State};
 
 handle_call({connect, Username, Password, Domain, Host, Resource},_,State) ->
