@@ -13,11 +13,11 @@
    ]},
   {env,[
    {mocked,false},
-   {refresh_time,true},
+   {refresh_time,false},
    {username,<<"raspberrypi">>},
    {password,<<"raspberrypi">>},
-   {domain,<<"iot.net">>},
-   {host,<<"iot.net">>},  %% Need to add host to /etc/hosts
+   {domain,<<"xmpp.jp">>},
+   {host,<<"xmpp.jp">>},  %% Need to add host to /etc/hosts
    {resource,<<"">>}
   ]},
   {modules, []},
