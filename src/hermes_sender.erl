@@ -53,7 +53,7 @@ format_and_send() ->
   ConsumedList = filter_list(DataList, AdditionalFilter),
   R = io_lib:format("~p",[ConsumedList]),
   FormatedList = lists:flatten(R),
-  ?CONNECTION_S:send_data(FormatedList).
+  ?CONNECTION_S:send_data(FormatedList++" 01").
 
 
 %% For example linear regression for bunch of measures
