@@ -80,6 +80,8 @@ handle_info(Error = {_,{exit_status,_}},Data) ->                           % Rec
   {noreply,Data};
 % Received data from sensor is sent to var_server
 handle_info(Msg,Data) ->
+  {_, {data, SensorData}} = Msg,
+  os_functions:chceck_data_format(binary_to_list(SensorData)),
   {ok,Msg} = driver_manager:add_data(Msg),
   {noreply,Data}.
 

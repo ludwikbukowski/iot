@@ -16,7 +16,7 @@
 -include_lib("exml/include/exml_stream.hrl").
 
 -export([
-  create_node/3,
+  create_node/4,
   delete_node_by_owner/3,
   wait_for_stanza_and_match_result_iq/3,
   get_subscription_confirmation_stanza/1,
@@ -29,7 +29,7 @@
   get_subscription_list_by_owner/3,
   assert_subscription_matching/4,
   is_publish_response_matching_item_id/2,
-  publish_sample_content/5,
+  publish_content/6,
   request_subscription_changes_by_owner/5,
   subscribe_by_user/3,
   subscribe_by_users/3,
@@ -45,24 +45,32 @@
 %% Checks superficialy is IQ from server  matches the sent id, there is "result" and sender is correct.
 wait_for_stanza_and_match_result_iq(User, Id, DestinationNode) ->
   ResultStanza = escalus:wait_for_stanza(User),
-  ReportString = " RESPONSE stanza: ~n~n",
-
-  io:format(ReportString ++ "~p~n", [ResultStanza]),
-  ct:pal(ReportString ++ "~s~n", [exml:to_binary(ResultStanza)]),
-
   QueryStanza = escalus_stanza:iq_with_type_id_from(<<"result">>, Id, DestinationNode),
   Result = escalus_pred:is_iq_result(QueryStanza, ResultStanza),
-
   {Result, ResultStanza}.
 
-create_node(User, DestinationNodeAddr, DestinationNodeName) ->
+create_node(User, Client, DestinationNodeAddr, DestinationNodeName) ->
   UserName = escalus_utils:get_username(User),
   Id = <<UserName/binary,<<"binsuffix">>/binary>>,
   PubSubCreateIq = escalus_pubsub_stanza:create_node_stanza(User, Id, DestinationNodeAddr, DestinationNodeName),
-  ct:pal(" REQUEST PubSubCreateIq: ~n~p~n",[exml:to_binary(PubSubCreateIq)]),
-  escalus:send(User, PubSubCreateIq),
-  {true, _RecvdStanza} = wait_for_stanza_and_match_result_iq(User, Id, DestinationNodeAddr).
-%% example 131
+  escalus:send(Client, PubSubCreateIq),
+  wait_for_stanza_and_match_result_iq(Client, Id, DestinationNodeAddr).
+
+
+%% publish items witn contents specifying which sample content to use.
+publish_content(DestinationTopicName, DestinationNode, PublishItemId, User, Client, Content) ->
+  Id = <<"publish1">>, %%todo: pass as parameter to function below!
+  PublishToNodeIq = escalus_pubsub_stanza:publish_node_with_content_stanza(DestinationTopicName, Content),
+  ReportString = " REQUEST PublishToNodeIq: ~n~p~n",
+  io:format(ReportString, [PublishToNodeIq]),
+  escalus:send(Client, PublishToNodeIq),
+  wait_for_stanza_and_match_result_iq(Client, Id, DestinationNode).
+
+
+
+
+
+
 
 
 %% returns servers' response stanza, according to 8.8.1.1 (owner case)
@@ -168,20 +176,6 @@ get_publish_response_item_id(PublishItemConfirmation = #xmlel{name = <<"iq">>}) 
 is_publish_response_matching_item_id(ItemTestId, PublishItemConfirmation) ->
   ItemTestId =:= get_publish_response_item_id(PublishItemConfirmation).
 
-%% publish items witn contents specifying which sample content to use.
-publish_sample_content(DestinationTopicName, DestinationNode, PublishItemId, User, SampleNumber) ->
-  Id = <<"publish1">>, %%todo: pass as parameter to function below!
-  PublishToNodeIq = escalus_pubsub_stanza:publish_sample_content_stanza(DestinationTopicName,
-    DestinationNode,
-    PublishItemId,
-    User,
-    SampleNumber),
-  ReportString = " REQUEST PublishToNodeIq: ~n~p~n",
-  ct:pal(ReportString, [exml:to_binary(PublishToNodeIq)]),
-  io:format(ReportString, [PublishToNodeIq]),
-  escalus:send(User, PublishToNodeIq),
-
-  {true, _RecvdStanza} = wait_for_stanza_and_match_result_iq(User, Id, DestinationNode).
 
 
 %% extract the items from the nested wrapper "items" enclosed in message/event

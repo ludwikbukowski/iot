@@ -10,7 +10,7 @@
 -author("ludwikbukowski").
 -define(DATE_LENGTH, 20).
 -type os() :: 'linux' | 'darwin'.
--export([ change_time/2, detect_os/0]).
+-export([change_time/2, detect_os/0, chceck_data_format/1]).
 
 
 %% API
@@ -68,3 +68,11 @@ reformat_tzo(Tzo) ->
 % Format of utc was <<"HH:MM">> and now is just "HH:MM"
 reformat_utc(Utc) ->
   binary_to_list(Utc).
+
+%% Used to check if data from sensor is in right format
+chceck_data_format(Data) ->
+  24 = length(Data),
+  list_to_integer(lists:sublist(Data, 2,3)).
+
+
+
