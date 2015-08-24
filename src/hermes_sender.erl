@@ -10,8 +10,9 @@
 -author("ludwikbukowski").
 -define(MANAGER_S, driver_manager).
 -define(CONNECTION_S, connection_server).
--define(SLEEP_TIME, 200).     %% 10 Hz
+-define(SLEEP_TIME, 100).     %% 10 Hz
 -define(DATA_PORTION, 1).
+-define(ID, "01"). %% ID of raspberrypi
 -define(NAME, hermes_sender).
 -define(CM, 2.56).
 -define(START, 2).
@@ -48,12 +49,12 @@ format_and_send() ->
   AdditionalFilter = fun(Msg) ->
     Distance = inch_to_cm(extract_distance(Msg)),
     Date = extract_time(Msg),
-    integer_to_list(Distance) ++ " " ++ Date
+    integer_to_list(Distance) ++ " " ++ Date ++ " " ++ ?ID
     end,
   ConsumedList = filter_list(DataList, AdditionalFilter),
   R = io_lib:format("~p",[ConsumedList]),
   FormatedList = lists:flatten(R),
-  ?CONNECTION_S:send_data(FormatedList++" 01").
+  ?CONNECTION_S:send_data(FormatedList).
 
 
 %% For example linear regression for bunch of measures
@@ -65,7 +66,7 @@ filter_list(List, AdditionalFun) ->
     case Tuple of
       {_, {data, Msg}} ->
         AdditionalFun(binary_to_list(Msg));
-      _ -> wrong_data
+      _ -> "wrong data"
     end
     end,
   lists:map(Fun,  List).
