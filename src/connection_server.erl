@@ -18,7 +18,7 @@
 -define(NODE_NAME,<<"iot.net">>).
 -define(DEST_ADDR,<<"iot.net">>).
 -include_lib("escalus/include/escalus.hrl").
--include_lib("include/iot_lib.hrl").
+-include_lib("iot_lib.hrl").
 -export([start_link/1, init/1, handle_call/3, handle_info/2, terminate/2, code_change/3, stop/0]).
 -export([connect/0, register_handler/2, unregister_handler/1, get_time/0, save_time/0, send_data/1, close_connection/0, create_node/0, publish_content/1]).
 -record(connection_state, {client , handlers}).
