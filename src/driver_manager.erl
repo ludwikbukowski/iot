@@ -11,7 +11,6 @@
 -behaviour(gen_server).
 -export([start_link/1, init/1, handle_call/3, terminate/2, handle_info/2, code_change/3]).
 -export([add_data/1, get_data/0, open_port/2, close_port/1, connect_to_mongoose/0, connect_to_mongoose/0, remove_data/1, open_sender/0, close_sender/0]).
--define(FILE_C(),case application:get_env(iot,mocked) of {ok,true} -> code:priv_dir(iot)++"/driver_mock"; _->code:priv_dir(iot)++"/driver" end).
 -define(NAME, driver_manager).
 -define(CONNECTION_SERVER, connection_server).
 -define(SENDER, hermes_sender).
@@ -36,7 +35,7 @@ init(_) ->
 %% Api
 -spec open_port(server_name(), sensor_type()) -> {reply, {ok,pid()}, any()} | {reply, unknown_option, any()}.
 open_port(Name, Option) ->
-  gen_server:call(?NAME, {openport, Name, ?FILE_C(), Option}).
+  gen_server:call(?NAME, {openport, Name, os_functions:get_driver_exec_file(), Option}).
 
 -spec close_port(atom()) -> {reply, {close_type(), any()}, any()}.
 close_port(Name) ->

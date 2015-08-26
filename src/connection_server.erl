@@ -20,7 +20,7 @@
 -include_lib("escalus/include/escalus.hrl").
 -include_lib("iot_lib.hrl").
 -export([start_link/1, init/1, handle_call/3, handle_info/2, terminate/2, code_change/3, stop/0]).
--export([connect/0, register_handler/2, unregister_handler/1, get_time/0, save_time/0, send_data/1, close_connection/0, create_node/0, publish_content/1]).
+-export([connect/0, register_handler/2, unregister_handler/1, get_time/0, save_time/0, send_data/1, close_connection/0, create_node/0, publish_content/1, subscribe/0]).
 -record(connection_state, {client , handlers}).
 
 start_link(_) ->
@@ -63,6 +63,9 @@ unregister_handler(HandlerName) ->
 create_node() ->
   gen_server:call(?NAME, {createnode, ?NODE_NAME}).
 
+subscribe() ->
+  gen_server:call(?NAME, subscribe).
+
 publish_content(Content) ->
   gen_server:call(?NAME, {publishcontent, Content}).
 
@@ -78,17 +81,21 @@ handle_call({createnode, NodeName}, _, #connection_state{client = Client} = Stat
   FullJid = get_full_jid(),
   case pubsub_tools:create_node(FullJid, Client, ?DEST_ADDR, NodeName) of
     {true, _RecvdStanza} -> {reply, _RecvdStanza,State};
+    {false, _RecvdStanza} ->
+      true = escalus_pred:is_iq_error(_RecvdStanza),
+      {reply, _RecvdStanza };
     Other -> {reply, Other, State}
   end;
 
 handle_call({publishcontent, Content}, _, State = #connection_state{client = Client}) ->
   FullJid = get_full_jid(),
-  case pubsub_tools:publish_content(?NODE_NAME, ?DEST_ADDR, <<"abc123">>, FullJid, Client, Content) of
-  {true, _RecvdStanza} ->
-    {reply, _RecvdStanza, State};
-    Other ->
-      {reply, Other, State}
-  end;
+  ok =  pubsub_tools:publish_content(?NODE_NAME, ?DEST_ADDR, FullJid, Client, Content),
+  {reply, published, State};
+
+handle_call(subscribe , _, State = #connection_state{client = Client}) ->
+  FullJid = get_full_jid(),
+  ReceivedStanza = pubsub_tools:subscribe_by_user(FullJid, Client, ?NODE_NAME, ?DEST_ADDR),
+  {reply, ReceivedStanza, State};
 
 handle_call({senddata, Data}, _, #connection_state{client = Client} = State) ->
   escalus_connection:send(Client, escalus_stanza:chat_to(?RECEIVER, Data)),
@@ -240,5 +247,6 @@ get_full_jid() ->
   {ok, Domain}  = application:get_env(iot, domain),
   HalfJid = <<Username/binary, <<"@">>/binary>>,
   <<HalfJid/binary,Domain/binary>>.
+
 
 
