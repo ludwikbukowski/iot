@@ -10,7 +10,7 @@
 -author("ludwikbukowski").
 -define(DATE_LENGTH, 20).
 -type os() :: 'linux' | 'darwin'.
--export([change_time/2, detect_os/0, chceck_data_format/1]).
+-export([change_time/2, detect_os/0, chceck_data_format/1, get_driver_exec_file/0]).
 
 
 %% API
@@ -73,6 +73,12 @@ reformat_utc(Utc) ->
 chceck_data_format(Data) ->
   24 = length(Data),
   list_to_integer(lists:sublist(Data, 2,3)).
+
+get_driver_exec_file()->
+  case application:get_env(iot,mocked) of
+    {ok,true} -> code:priv_dir(iot)++"/driver_mock";
+    _->code:priv_dir(iot)++"/driver"
+  end.
 
 
 

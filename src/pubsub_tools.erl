@@ -8,7 +8,10 @@
 %%%-------------------------------------------------------------------
 -module(pubsub_tools).
 -author("ludwikbukowski").
-
+-define(TITLE, <<"sensor data">>).
+-define(ID_NODE, <<"someid1">>).
+-define(ID_PUBLISH, <<"someid2">>).
+-define(ID_SUBSCRIBE, <<"someid3">>).
 -include_lib("escalus/include/escalus.hrl").
 -include_lib("common_test/include/ct.hrl").
 -include_lib("escalus/include/escalus_xmlns.hrl").
@@ -29,13 +32,13 @@
   get_subscription_list_by_owner/3,
   assert_subscription_matching/4,
   is_publish_response_matching_item_id/2,
-  publish_content/6,
+  publish_content/5,
   request_subscription_changes_by_owner/5,
   subscribe_by_user/3,
   subscribe_by_users/3,
   unsubscribe_by_user/3,
   unsubscribe_by_users/3
-]).
+  , prepare_body_for_publish/2, subscribe_by_user/4]).
 
 %% ----------------------------- HELPER and DIAGNOSTIC functions -----------------------
 %% Note ------ functions in this section are not stanza generating functions but:
@@ -43,30 +46,38 @@
 %% - high level wrappers for escalus specific to pubsub feature
 
 %% Checks superficialy is IQ from server  matches the sent id, there is "result" and sender is correct.
-wait_for_stanza_and_match_result_iq(User, Id, DestinationNode) ->
-  ResultStanza = escalus:wait_for_stanza(User),
+wait_for_stanza_and_match_result_iq(Client, Id, DestinationNode) ->
+  ResultStanza = escalus:wait_for_stanza(Client),
   QueryStanza = escalus_stanza:iq_with_type_id_from(<<"result">>, Id, DestinationNode),
   Result = escalus_pred:is_iq_result(QueryStanza, ResultStanza),
   {Result, ResultStanza}.
 
 create_node(User, Client, DestinationNodeAddr, DestinationNodeName) ->
-  UserName = escalus_utils:get_username(User),
-  Id = <<UserName/binary,<<"binsuffix">>/binary>>,
-  PubSubCreateIq = escalus_pubsub_stanza:create_node_stanza(User, Id, DestinationNodeAddr, DestinationNodeName),
+  PubSubCreateIq = escalus_pubsub_stanza:create_node_stanza(User, ?ID_NODE, DestinationNodeAddr, DestinationNodeName),
   escalus:send(Client, PubSubCreateIq),
-  wait_for_stanza_and_match_result_iq(Client, Id, DestinationNodeAddr).
+  wait_for_stanza_and_match_result_iq(Client, ?ID_NODE, DestinationNodeAddr).
 
 
 %% publish items witn contents specifying which sample content to use.
-publish_content(DestinationTopicName, DestinationNode, PublishItemId, User, Client, Content) ->
-  Id = <<"publish1">>, %%todo: pass as parameter to function below!
+publish_content(DestinationTopicName, DestinationNode, User, Client, Data) ->
+  %% Prepare body of publish
+  Entry = escalus_pubsub_stanza:publish_entry(prepare_body_for_publish(?TITLE, Data)),
+  Content = escalus_pubsub_stanza:publish_item(?ID_PUBLISH, Entry),
   PublishToNodeIq = escalus_pubsub_stanza:publish_node_with_content_stanza(DestinationTopicName, Content),
-  ReportString = " REQUEST PublishToNodeIq: ~n~p~n",
-  io:format(ReportString, [PublishToNodeIq]),
-  escalus:send(Client, PublishToNodeIq),
-  wait_for_stanza_and_match_result_iq(Client, Id, DestinationNode).
+  Stanza = escalus_pubsub_stanza:iq_with_id(set, ?ID_PUBLISH, DestinationNode, User, [escalus_pubsub_stanza:pubsub_stanza(PublishToNodeIq, ?NS_PUBSUB)]),
+  escalus:send(Client, Stanza).
 
 
+subscribe_by_user(User, Client, NodeName, NodeAddress) ->
+  SubscribeToNode = escalus_pubsub_stanza:subscribe_by_user_stanza(User, ?ID_SUBSCRIBE, NodeName, NodeAddress),
+  escalus:send(Client, SubscribeToNode),
+  case wait_for_stanza_and_match_result_iq(Client, ?ID_SUBSCRIBE, NodeAddress) of
+    {true, RecvdStanza} ->
+      true = assert_subscription_matching(RecvdStanza, User, NodeName, false),
+      RecvdStanza;
+    {false, Other} ->
+      {error_while_subscrbtion, Other}
+  end.
 
 
 
@@ -130,12 +141,13 @@ assert_subscription_matching(SubscrConfirmation, User, _DestinationNode, Optiona
   R1 = exml_query:subelement(SubscrConfirmation, <<"pubsub">>),
   Subscr =  exml_query:subelement(R1, <<"subscription">>),
   Jid = exml_query:attr(Subscr, <<"jid">>), %% required
-  Jid =:= escalus_utils:get_jid(User), %%Sender matches?
+  Jid =:= User, %%Sender matches?
   if OptionalAttrCheck ->
     Val1 = exml_query:attr(Subscr, <<"node">>) =/= undefined, %% optional
     Val2 = exml_query:attr(Subscr, <<"subid">>) =/= undefined, %% optional
     Val3 = exml_query:attr(Subscr, <<"subscription">>) =/= undefined, %% optional
-    Val1 and Val2 and Val3
+    Val1 and Val2 and Val3;
+  true -> true
   end.
 
 subscribe_by_user(User, NodeName, NodeAddress) ->
@@ -235,7 +247,11 @@ delete_node_by_owner(User, NodeName, NodeAddr) ->
 
 
 
-
+prepare_body_for_publish(Title, Data) ->
+  [
+    #xmlel{name = <<"title">>, children  = [ #xmlcdata{content=[Title]}]},
+    #xmlel{name = <<"data">>, children = [ #xmlcdata{content=[Data]}]}
+  ].
 
 
 

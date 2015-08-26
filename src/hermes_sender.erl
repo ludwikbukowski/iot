@@ -16,6 +16,7 @@
 -define(NAME, hermes_sender).
 -define(CM, 2.56).
 -define(START, 2).
+-define(SENDING_DATA_FUNC, publish_content).
 -behaviour(gen_server).
 %% API
 -export([start_link/0, init/1, handle_info/2, format_and_send/0, terminate/2]).
@@ -54,7 +55,7 @@ format_and_send() ->
   ConsumedList = filter_list(DataList, AdditionalFilter),
   R = io_lib:format("~p",[ConsumedList]),
   FormatedList = lists:flatten(R),
-  ?CONNECTION_S:send_data(FormatedList).
+  ?CONNECTION_S:?SENDING_DATA_FUNC(FormatedList).
 
 
 %% For example linear regression for bunch of measures
