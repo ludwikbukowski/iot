@@ -82,8 +82,8 @@ handle_call({createnode, NodeName}, _, #connection_state{client = Client} = Stat
   case pubsub_tools:create_node(FullJid, Client, ?DEST_ADDR, NodeName) of
     {true, _RecvdStanza} -> {reply, _RecvdStanza,State};
     {false, _RecvdStanza} ->
-      true = escalus_pred:is_iq_error(_RecvdStanza),
-      {reply, _RecvdStanza };
+%%       true = escalus_pred:is_iq_error(_RecvdStanza),
+      {reply, _RecvdStanza, State};
     Other -> {reply, Other, State}
   end;
 

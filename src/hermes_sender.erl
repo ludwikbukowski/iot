@@ -16,7 +16,6 @@
 -define(NAME, hermes_sender).
 -define(CM, 2.56).
 -define(START, 2).
--define(SENDING_DATA_FUNC, publish_content).
 -behaviour(gen_server).
 %% API
 -export([start_link/0, init/1, handle_info/2, format_and_send/0, terminate/2]).
@@ -47,15 +46,27 @@ terminate(_,_) ->
 %% Internal functions
 format_and_send() ->
   DataList = ?MANAGER_S:remove_data(?DATA_PORTION),
-  AdditionalFilter = fun(Msg) ->
-    Distance = inch_to_cm(extract_distance(Msg)),
-    Date = extract_time(Msg),
-    integer_to_list(Distance) ++ " " ++ Date ++ " " ++ ?ID
-    end,
-  ConsumedList = filter_list(DataList, AdditionalFilter),
-  R = io_lib:format("~p",[ConsumedList]),
-  FormatedList = lists:flatten(R),
-  ?CONNECTION_S:?SENDING_DATA_FUNC(FormatedList).
+  case DataList of
+    empty_list ->
+      ok;
+    _ ->
+      AdditionalFilter = fun(Msg) ->
+        Distance = inch_to_cm(extract_distance(Msg)),
+        Date = extract_time(Msg),
+        integer_to_list(Distance) ++ " " ++ Date ++ " " ++ ?ID
+      end,
+      ConsumedList = filter_list(DataList, AdditionalFilter),
+      R = io_lib:format("~p",[ConsumedList]),
+      FormatedList = lists:flatten(R),
+      case application:get_env(iot, sending_fun) of
+        {ok, msg} ->
+          ?CONNECTION_S:send_data(FormatedList);
+        {ok,_} ->
+          ?CONNECTION_S:publish_data(FormatedList)
+      end
+  end.
+
+
 
 
 %% For example linear regression for bunch of measures

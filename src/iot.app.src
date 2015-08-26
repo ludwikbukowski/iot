@@ -15,6 +15,7 @@
    {mocked,false},
    {refresh_time,true},
    {username,<<"raspberrypi">>},
+   {sending_fun,msg},
    {password,<<"raspberrypi">>},
    {domain,<<"iot.net">>},
    {host,<<"iot.net">>},  %% Need to add host to /etc/hosts
