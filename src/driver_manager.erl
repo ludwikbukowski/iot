@@ -13,6 +13,7 @@
 -export([add_data/1, get_data/0, open_port/2, close_port/1, connect_to_mongoose/0, connect_to_mongoose/0, remove_data/1, open_sender/0, close_sender/0]).
 -define(NAME, driver_manager).
 -define(CONNECTION_SERVER, connection_server).
+-define(OLDEST_SON, eros).
 -define(SENDER, hermes_sender).
 -export_type([sensor_type/0, close_type/0]).
 -type sensor_type() :: 'uart' | atom().
@@ -81,7 +82,7 @@ handle_call({openport, Name, File, uart},_,Data) ->
   {reply,{ok,Pid},Data};
 
 handle_call(connect,_,Data) ->
-  _ = ?CONNECTION_SERVER:connect(),
+  _ = ?CONNECTION_SERVER:connect_all(?OLDEST_SON),
   {reply,connected,Data};
 
 handle_call(opensender,_,Data) ->

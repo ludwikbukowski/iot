@@ -10,134 +10,115 @@
 -module(connection_server).
 -author("ludwikbukowski").
 -behavoiur(gen_server).
--define(NAME, connection_server).
 -define(ERROR_LOGGER,my_error_logger).
 -define(TIMER,timer).
 -define(TIMEOUT,3000).
+-define(TIMEOUT_MONGOOSE,4000).
 -define(RECEIVER,<<"test@iot.net">>).
--define(NODE_NAME,<<"iot.net">>).
--define(DEST_ADDR,<<"iot.net">>).
+-define(NODE_NAME,<<"pubsub.iot.net">>).
+-define(DEST_ADDR,<<"pubsub.iot.net">>).
+-define(ID_GENERATE(), base64:encode(crypto:strong_rand_bytes(10))).
 -include_lib("escalus/include/escalus.hrl").
+-include_lib("exml/include/exml.hrl").
 -include_lib("iot_lib.hrl").
--export([start_link/1, init/1, handle_call/3, handle_info/2, terminate/2, code_change/3, stop/0]).
--export([connect/0, register_handler/2, unregister_handler/1, get_time/0, save_time/0, send_data/1, close_connection/0, create_node/0, publish_content/1, subscribe/0]).
--record(connection_state, {client , handlers}).
+-export([start_link/1, init/1, handle_call/3, handle_info/2, terminate/2, code_change/3, close_connection/1, get_time/1, save_time/1, send_data/2, register_handler/3,
+  unregister_handler/2, create_node/1, subscribe/1, publish_content/2, stop/1, get_bare_jid/0]).
+-record(connection_state, {client , handlers, notes}).
 
-start_link(_) ->
+start_link(Name) ->
   gen_server:start_link(
-    {local, ?NAME},
+    {local, Name},
     connection_server,
-    [], []).
+    Name, []).
 
-init(_) ->
+init(Name) ->
   process_flag(trap_exit, true),
-  {ok, #connection_state{client = not_connected, handlers = dict:new()}}.
+  self() ! {connect_to_mongoose, list_to_binary(atom_to_list(Name))},
+  {ok, #connection_state{client = not_connected, handlers = dict:new(), notes = dict:new()}}.
 
 % Api
-connect() ->
-  {ok, Username} = application:get_env(iot,username),
-  {ok, Password} = application:get_env(iot,password),
-  {ok, Domain} = application:get_env(iot,domain),
-  {ok, Host} = application:get_env(iot,host),
-  {ok, Resource} = application:get_env(iot,resource),
-  gen_server:call(?NAME, {connect, Username, Password, Domain, Host, Resource}).
 
-close_connection() ->
-  gen_server:call(?NAME, close_connection).
+close_connection(Name) ->
+  gen_server:call(Name, close_connection).
 
-get_time() ->
-   gen_server:call(?NAME, get_time).
+get_time(Name) ->
+   gen_server:call(Name, {get_time,list_to_binary(atom_to_list(Name)) }).
 
-save_time() ->
-  gen_server:call(?NAME, save_time).
+save_time(Name) ->
+  gen_server:call(Name, {save_time,list_to_binary(atom_to_list(Name)) }).
 
-send_data(Data) ->
-  gen_server:call(?NAME,{senddata, Data}).
+send_data(Name,Data) ->
+  gen_server:call(Name,{senddata, Data}).
 
-register_handler(HandlerName, Handler) ->
-  gen_server:call(?NAME, {register_handler, HandlerName, Handler}).
+%% All handlers are functions with two parameters. First is incomming Stanza and the second is Server's State. Handler has to return NewState (or pass the old one)
+register_handler(Name,HandlerName, Handler) ->
+  gen_server:call(Name, {register_handler, HandlerName, Handler}).
 
-unregister_handler(HandlerName) ->
-  gen_server:call(?NAME, {unregister_handler, HandlerName}).
+unregister_handler(Name,HandlerName) ->
+  gen_server:call(Name, {unregister_handler, HandlerName}).
 
-create_node() ->
-  gen_server:call(?NAME, {createnode, ?NODE_NAME}).
+create_node(Name) ->
+  gen_server:call(Name, {createnode, list_to_binary(atom_to_list(Name)) , ?NODE_NAME}).
 
-subscribe() ->
-  gen_server:call(?NAME, subscribe).
+subscribe(Name) ->
+  gen_server:call(Name, {subscribe,list_to_binary(atom_to_list(Name)) }).
 
-publish_content(Content) ->
-  gen_server:call(?NAME, {publishcontent, Content}).
+publish_content(Name,Content) ->
+  gen_server:call(Name, {publishcontent,list_to_binary(atom_to_list(Name)) , Content}).
 
-stop() ->
-  gen_server:call(?NAME, stop).
+stop(Name) ->
+  gen_server:call(Name, stop).
 
 
 %% Handle Calls and casts
 handle_call(stop,_ , State) ->
   {stop, stopped_by_client, State};
 
-handle_call({createnode, NodeName}, _, #connection_state{client = Client} = State) ->
-  FullJid = get_full_jid(),
-  case pubsub_tools:create_node(FullJid, Client, ?DEST_ADDR, NodeName) of
-    {true, _RecvdStanza} -> {reply, _RecvdStanza,State};
-    {false, _RecvdStanza} ->
-%%       true = escalus_pred:is_iq_error(_RecvdStanza),
-      {reply, _RecvdStanza, State};
-    Other -> {reply, Other, State}
-  end;
+handle_call({createnode, Resource, NodeName}, _, #connection_state{client = Client, handlers = Handlers, notes = Notes} = State) ->
+  FullJid = get_full_jid(Resource),
+  Id = ?ID_GENERATE(),
+  pubsub_tools:create_node(FullJid, Client, Id, ?DEST_ADDR, NodeName),
+  {reply, ok, State};
 
-handle_call({publishcontent, Content}, _, State = #connection_state{client = Client}) ->
-  FullJid = get_full_jid(),
-  ok =  pubsub_tools:publish_content(?NODE_NAME, ?DEST_ADDR, FullJid, Client, Content),
-  {reply, published, State};
+handle_call({publishcontent,Resource, Content}, _, State = #connection_state{client = Client, handlers = Handlers, notes = Notes}) ->
+  FullJid = get_full_jid(Resource),
+  Id = ?ID_GENERATE(),
+  NewNotes = dict:append(Id, createnode, Notes),
+  H = publish_content_handler(Id),
+  NewHandlers = register_handler_fun(Id, H, Handlers),
+  pubsub_tools:publish_content(?NODE_NAME, Id, ?DEST_ADDR, FullJid, Client, Content),
+  {reply, ok, State#connection_state{handlers = NewHandlers, notes = NewNotes}};
 
-handle_call(subscribe , _, State = #connection_state{client = Client}) ->
-  FullJid = get_full_jid(),
-  ReceivedStanza = pubsub_tools:subscribe_by_user(FullJid, Client, ?NODE_NAME, ?DEST_ADDR),
-  {reply, ReceivedStanza, State};
+
+handle_call({subscribe,Resource }, _, State = #connection_state{client = Client}) ->
+  FullJid = get_full_jid(Resource),
+  pubsub_tools:subscribe_by_user(FullJid, Client, ?NODE_NAME, ?DEST_ADDR),
+  {reply, ok, State};
 
 handle_call({senddata, Data}, _, #connection_state{client = Client} = State) ->
   escalus_connection:send(Client, escalus_stanza:chat_to(?RECEIVER, Data)),
   {reply, sent, State};
 
-handle_call({connect, Username, Password, Domain, Host, Resource},_,State) ->
-  Cfg = user_spec(Username, Domain, Host, Password, Resource),
-  MergedConf = merge_props([], Cfg),
-  case escalus_connection:start(MergedConf) of
-    {ok, Client, _, _} ->
-      send_presence_available(Client),
-      receive
-        {stanza, _, Stanza} -> case escalus_pred:is_presence(Stanza) of
-                 true ->
-                   {reply, State#connection_state{client = Client}, State#connection_state{client = Client}};
-                 _ ->
-                   {stop, {connection_wrong_receive, Stanza}, State}
-               end
-        end;
-    _ ->
-      {stop, cannot_connect, State}
-  end;
+
 
 handle_call(close_connection, _, State = #connection_state{client = Client}) ->
   escalus_connection:stop(Client),
   {reply, closed_connection ,State};
 
 handle_call({register_handler, HandlerName, Handler}, _, State = #connection_state{handlers = Handlers}) ->
-  NewHandlers = dict:append(HandlerName, Handler, Handlers),
+  NewHandlers = register_handler_fun(HandlerName, Handler, Handlers),
   {reply, registered , State#connection_state {handlers = NewHandlers}};
 
 handle_call({unregister_handler, HandlerName}, _, State = #connection_state{handlers = Handlers}) ->
-  case dict:find(HandlerName, Handlers) of
-    error ->
-    {reply, not_found, State};
-    _ ->
-      NewHandlers = dict:erase(HandlerName, Handlers),
-      {reply, unregistered, State#connection_state{handlers = NewHandlers} }
+  case unregister_handler_fun(HandlerName, Handlers) of
+    not_found ->
+      {reply, not_found, Handlers};
+    NewHandlers ->
+      {reply, unregistered, State#connection_state{handlers = NewHandlers}}
   end;
 
-handle_call(get_time, _, State = #connection_state{client = Client}) ->
-  case time_request(Client) of
+handle_call({get_time,Resource}, _, State = #connection_state{client = Client}) ->
+  case time_request(Client, Resource) of
     {time, Time} ->
       {reply, Time ,State};
     timeout ->
@@ -145,8 +126,8 @@ handle_call(get_time, _, State = #connection_state{client = Client}) ->
   end;
 
 
-handle_call(save_time, _, State = #connection_state{client = Client}) ->
-  case time_request(Client) of
+handle_call({save_time,Resource}, _, State = #connection_state{client = Client}) ->
+  case time_request(Client, Resource) of
     {time, Time} ->
       {Utc, Tzo} = Time,
       os_functions:change_time(Tzo, Utc),
@@ -155,16 +136,46 @@ handle_call(save_time, _, State = #connection_state{client = Client}) ->
       {reply, connection_timeout, State}
   end.
 
-handle_info({stanza, _, Stanza}, State = #connection_state{handlers = Handlers}) ->
-  ReturnedAcc = handle_stanza(Stanza, Handlers),                      %%I Should restore it somewhere
-  {noreply, State}.
+handle_info({connect_to_mongoose, Resource}, State) ->
+  io:format("Resource ~p zaczyna sie laczyc~n",[Resource]),
+  {ok, Username} = application:get_env(iot,username),
+  {ok, Password} = application:get_env(iot,password),
+  {ok, Domain} = application:get_env(iot,domain),
+  {ok, Host} = application:get_env(iot,host),
+  Cfg = user_spec(Username, Domain, Host, Password, Resource),
+  MergedConf = merge_props([], Cfg),
+  case escalus_connection:start(MergedConf) of
+    {ok, Client, _, _} ->
+      send_presence_available(Client),
+      receive
+        {stanza, _, Stanza} -> case escalus_pred:is_presence(Stanza) of
+                                 true ->
+                                   {noreply, State#connection_state{client = Client}};
+                                 Some ->
+                                   {stop, {connection_wrong_receive, Some, Stanza}, State}
+                               end
+      after ?TIMEOUT_MONGOOSE ->
+        {stop, connection_timeout, State}
+      end;
+    Other ->
+      {stop, {cannot_connect, Other}, State}
+        end;
+
+handle_info({stanza, _, Stanza}, State = #connection_state{}) ->
+  NewState = handle_stanza(Stanza, State),                      %%I Should restore it somewhere
+  {noreply, NewState}.
 
 
 
 %% Other
 
 terminate(_, #connection_state{client = Client = #client{}}) ->
-  escalus_connection:stop(Client),
+  try   escalus_connection:stop(Client) of
+    _ -> ok
+  catch
+    exit:_ ->ok;
+    _:_ -> ok
+  end,
   ok;
 
 terminate(_, _) ->
@@ -197,8 +208,8 @@ send_presence_available(Client) ->
   Pres = escalus_stanza:presence(<<"available">>),
   escalus_connection:send(Client, Pres).
 
-handle_stanza(Stanza, Handlers) ->
-  dict:fold(fun(_, Handler, Acc) -> [(hd(Handler))(Stanza)] ++ Acc end, [], Handlers).
+handle_stanza(Stanza, State=#connection_state{client = Client, handlers = Handlers, notes = Notes}) ->
+  dict:fold(fun(_, Handler, Acc) -> (hd(Handler))(Stanza, Acc) end, State, Handlers).
 
 time_from_stanza(Stanza = #xmlel{name = <<"iq">>, attrs = _, children = [Child]}) ->
     escalus_pred:is_iq_result(Stanza),
@@ -225,14 +236,10 @@ time_from_stanza(Some) ->
     erlang:exit(timeout)
   end.
 
-time_request(Client) ->
-  {ok, Username} = application:get_env(iot,username),
-  {ok, Domain} = application:get_env(iot,domain),
-  {ok, Host} = application:get_env(iot,host),
-  HalfJid = <<Username/binary, <<"@">>/binary>>,
-  FullJid = <<HalfJid/binary,Domain/binary>>,
-  Stanza = ?TIME_STANZA(FullJid, Host),
-  escalus:send(Client, Stanza),
+time_request(Client, Resource) ->
+  {ok, Host} = application:get_env(iot, host),
+  Stanza = ?TIME_STANZA(get_full_jid(Resource), Host),
+  escalus_connection:send(Client, Stanza),
   receive
     {stanza, _, Reply} ->
       ResponseTime = time_from_stanza(Reply),
@@ -242,11 +249,66 @@ time_request(Client) ->
       timeout
   end.
 
-get_full_jid() ->
+get_bare_jid() ->
   {ok, Username}  = application:get_env(iot, username),
   {ok, Domain}  = application:get_env(iot, domain),
   HalfJid = <<Username/binary, <<"@">>/binary>>,
   <<HalfJid/binary,Domain/binary>>.
+
+get_full_jid(Resource) ->
+  {ok, Username}  = application:get_env(iot, username),
+  {ok, Domain}  = application:get_env(iot, domain),
+  HalfJid = <<Username/binary, <<"@">>/binary>>,
+  NoResource = <<HalfJid/binary,Domain/binary>>,
+  HalfResource = <<NoResource/binary,<<"/">>/binary>>,
+  <<HalfResource/binary, Resource/binary>>.
+
+
+register_handler_fun(HandlerName, Handler, Handlers) ->
+  dict:append(HandlerName, Handler, Handlers).
+
+unregister_handler_fun(HandlerName, Handlers) ->
+  case dict:find(HandlerName, Handlers) of
+    error ->
+      not_found;
+    _ ->
+      dict:erase(HandlerName, Handlers)
+  end.
+
+%% Special Handlers for Pubsub server responses
+
+% Check if response is good
+publish_content_handler( Id) ->
+  fun(Stanza, State = #connection_state{notes = Notes}) ->
+    case escalus_pred:is_iq_result(Stanza) of
+      true ->
+        case Stanza of
+          #xmlel{attrs = Attrs} ->
+        ReceivedId = proplists:get_value(<<"id">>, Attrs),
+    case ReceivedId of
+     Id ->
+        case dict:find(Id, Notes) of
+          error ->
+            my_error_logger:log_error("I got result without request!~n"),
+          State;
+          _ ->
+%%             io:format("all is ok!~n"),
+            dict:erase(Id, Notes),
+            State
+        end;
+      _ ->
+%%         io:format("wrong Id:~p and stanza ~p~n",[Id,Stanza]),
+        State
+    end;
+          _ ->
+            my_error_logger:log_error("Got stanza with no ID!~n"),
+            State
+          end;
+    _ ->
+      State
+    end
+end.
+
 
 
 

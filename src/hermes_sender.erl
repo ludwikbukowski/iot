@@ -16,35 +16,44 @@
 -define(NAME, hermes_sender).
 -define(CM, 2.56).
 -define(START, 2).
+-record(hermes_state, {list , index}).
 -behaviour(gen_server).
 %% API
--export([start_link/0, init/1, handle_info/2, format_and_send/0, terminate/2]).
+-export([start_link/0, init/1, handle_info/2, format_and_send/1, terminate/2]).
 
 
 start_link() ->
   gen_server:start_link(
     {local,?NAME},
     hermes_sender,
-    [], []).
+    #hermes_state{list = [eros
+      ,deimos, harmonia, phobos, alcippe, pothos, himeros
+    ], index = 1}, []).
 
-init(_) ->
+init(Init) ->
   self() ! send,
-  {ok, self()}.
+  {ok, Init}.
 
-handle_info(send, Pid) ->
-  erlang:send_after(?SLEEP_TIME, Pid, send),
-  format_and_send(),
-  {noreply, Pid};
+handle_info(send, State = #hermes_state{list = L, index = I}) ->
+  erlang:send_after(?SLEEP_TIME, self(), send),
+  Connection = lists:nth(I,L),
+  NewIndex = (I+1) rem length(L),
+  FixedIndex = if NewIndex ==0 ->  1;
+                  true -> NewIndex
+                  end,
+  NewState = State#hermes_state{index = FixedIndex},
+  format_and_send(Connection),
+  {noreply, NewState};
 
-handle_info(_, Pid) ->
-  {stop, wrong_receive, Pid}.
+handle_info(_, State) ->
+  {stop, wrong_receive, State}.
 
 terminate(_,_) ->
   ok.
 
 
 %% Internal functions
-format_and_send() ->
+format_and_send(Connection) ->
   DataList = ?MANAGER_S:remove_data(?DATA_PORTION),
   case DataList of
     empty_list ->
@@ -60,9 +69,9 @@ format_and_send() ->
       FormatedList = lists:flatten(R),
       case application:get_env(iot, sending_fun) of
         {ok, msg} ->
-          ?CONNECTION_S:send_data(FormatedList);
+          ?CONNECTION_S:send_data(Connection, FormatedList);
         {ok,_} ->
-          ?CONNECTION_S:publish_data(FormatedList)
+     ok   % ?CONNECTION_S:publish_content(Connection, FormatedList)
       end
   end.
 

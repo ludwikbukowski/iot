@@ -25,19 +25,19 @@ start_link() ->
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
   % First, ask Connection_Server for Time
-  connection_server:connect(),
   case application:get_env(iot,refresh_time) of
     {ok, true} ->
-      connection_server:save_time();
+    connection_server:save_time(eros);
     _ ->
       ok
   end,
-   connection_server:create_node(),
+%%   dbg:tracer(),dbg:tp(connection_server, handle_info,x),dbg:p(all,c),
+  connection_server:create_node(eros),
   {ok, { {one_for_one, 2, 2},
     [
-      {driver_manager,{driver_manager,start_link,[[]]},permanent,5000,worker,[driver_manager]},
-      {my_error_logger,{my_error_logger,start_link,[[]]},permanent,5000,worker,[my_error_logger]},      % Its more excercise than useful module
-      {sensor_server,{driver_server, start_link,[sensor_server, os_functions:get_driver_exec_file()]}, transient, 5000, worker, [driver_server]}
+      {calliope,{driver_manager,start_link,[[]]},permanent,5000,worker,[driver_manager]},         % Muse of poetry; Responsibility: write data from sensor to own state
+      {melpomene,{my_error_logger,start_link,[[]]},permanent,5000,worker,[my_error_logger]},      % Muse of Tragedy; Responsibility: Log ERRORS
+      {terpsichore,{driver_server, start_link,[terpsichore, os_functions:get_driver_exec_file()]}, transient, 5000, worker, [driver_server]} % Muse of dance; Responsibility: Get data from sensor and send to caliope
     ]
   }
   }.

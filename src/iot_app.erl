@@ -16,6 +16,10 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
+%%     dbg:tracer(),
+%%     dbg:p(all, [call, timestamp]),
+%%     dbg:tpl(connection_server, x),
+%%     dbg:tpl(escalus_tcp, x),
     iot_sup:start_link().
 
 %%--------------------------------------------------------------------

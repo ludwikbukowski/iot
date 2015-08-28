@@ -7,19 +7,18 @@
    [
     kernel,
     stdlib,
-     sasl,
     base16,
-     escalus
+    escalus
    ]},
   {env,[
    {mocked,false},
    {refresh_time,true},
    {username,<<"raspberrypi">>},
-   {sending_fun,msg},
+   {sending_fun,publish},
    {password,<<"raspberrypi">>},
    {domain,<<"iot.net">>},
    {host,<<"iot.net">>},  %% Need to add host to /etc/hosts
-   {resource,<<"">>}
+   {resource,<<"pi">>}
   ]},
   {modules, []},
 

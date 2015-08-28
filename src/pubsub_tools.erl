@@ -9,7 +9,7 @@
 -module(pubsub_tools).
 -author("ludwikbukowski").
 -define(TITLE, <<"sensor data">>).
--define(ID_NODE, <<"someid1">>).
+-define(ID_NODE(), base64:encode(crypto:strong_rand_bytes(10))).
 -define(ID_PUBLISH, <<"someid2">>).
 -define(ID_SUBSCRIBE, <<"someid3">>).
 -include_lib("escalus/include/escalus.hrl").
@@ -19,7 +19,7 @@
 -include_lib("exml/include/exml_stream.hrl").
 
 -export([
-  create_node/4,
+  create_node/5,
   delete_node_by_owner/3,
   wait_for_stanza_and_match_result_iq/3,
   get_subscription_confirmation_stanza/1,
@@ -32,7 +32,7 @@
   get_subscription_list_by_owner/3,
   assert_subscription_matching/4,
   is_publish_response_matching_item_id/2,
-  publish_content/5,
+  publish_content/6,
   request_subscription_changes_by_owner/5,
   subscribe_by_user/3,
   subscribe_by_users/3,
@@ -52,32 +52,52 @@ wait_for_stanza_and_match_result_iq(Client, Id, DestinationNode) ->
   Result = escalus_pred:is_iq_result(QueryStanza, ResultStanza),
   {Result, ResultStanza}.
 
-create_node(User, Client, DestinationNodeAddr, DestinationNodeName) ->
-  PubSubCreateIq = escalus_pubsub_stanza:create_node_stanza(User, ?ID_NODE, DestinationNodeAddr, DestinationNodeName),
-  escalus:send(Client, PubSubCreateIq),
-  wait_for_stanza_and_match_result_iq(Client, ?ID_NODE, DestinationNodeAddr).
+create_node(User, Client, Id, DestinationNodeAddr, DestinationNodeName) ->
+  PubSubCreateIq = escalus_pubsub_stanza:create_node_stanza(User, Id, DestinationNodeAddr, DestinationNodeName),
+  escalus_connection:send(Client, PubSubCreateIq).
+%%   case wait_for_stanza_and_match_result_iq(Client, Id, DestinationNodeAddr) of
+%%     {true, _} ->
+%%       created;
+%%     {false, Stanza} ->
+%%       case escalus_pred:is_error(<<"cancel">>, <<"conflict">>, Stanza) of
+%%         true ->
+%%           already_exists;
+%%         false ->
+%%           unknown_error
+%%       end;
+%%     Other ->
+%%       {unknown_bug, Other}
+%%   end.
+
 
 
 %% publish items witn contents specifying which sample content to use.
-publish_content(DestinationTopicName, DestinationNode, User, Client, Data) ->
+publish_content(DestinationTopicName, Id, DestinationNode, User, Client, Data) ->
   %% Prepare body of publish
   Entry = escalus_pubsub_stanza:publish_entry(prepare_body_for_publish(?TITLE, Data)),
-  Content = escalus_pubsub_stanza:publish_item(?ID_PUBLISH, Entry),
+  Content = escalus_pubsub_stanza:publish_item(Id, Entry),
   PublishToNodeIq = escalus_pubsub_stanza:publish_node_with_content_stanza(DestinationTopicName, Content),
-  Stanza = escalus_pubsub_stanza:iq_with_id(set, ?ID_PUBLISH, DestinationNode, User, [escalus_pubsub_stanza:pubsub_stanza(PublishToNodeIq, ?NS_PUBSUB)]),
-  escalus:send(Client, Stanza).
-
+  Stanza = escalus_pubsub_stanza:iq_with_id(set, Id, DestinationNode, User, [escalus_pubsub_stanza:pubsub_stanza(PublishToNodeIq, ?NS_PUBSUB)]),
+  escalus_connection:send(Client, Stanza).
+%%   case wait_for_stanza_and_match_result_iq(Client, Id, DestinationNode) of
+%%     {true, ReplyStanza} ->
+%%       published;
+%%     {false, ReplyStanza} ->
+%%       {not_published, ReplyStanza};
+%%     Other ->
+%%       {error, Other}
+%%   end.
 
 subscribe_by_user(User, Client, NodeName, NodeAddress) ->
   SubscribeToNode = escalus_pubsub_stanza:subscribe_by_user_stanza(User, ?ID_SUBSCRIBE, NodeName, NodeAddress),
-  escalus:send(Client, SubscribeToNode),
-  case wait_for_stanza_and_match_result_iq(Client, ?ID_SUBSCRIBE, NodeAddress) of
-    {true, RecvdStanza} ->
-      true = assert_subscription_matching(RecvdStanza, User, NodeName, false),
-      RecvdStanza;
-    {false, Other} ->
-      {error_while_subscrbtion, Other}
-  end.
+  escalus_connection:send(Client, SubscribeToNode).
+%%   case wait_for_stanza_and_match_result_iq(Client, ?ID_SUBSCRIBE, NodeAddress) of
+%%     {true, RecvdStanza} ->
+%%       true = assert_subscription_matching(RecvdStanza, User, NodeName, false),
+%%       subscribed;
+%%     {false, Other} ->
+%%       {error_while_subscrbtion, Other}
+%%   end.
 
 
 
