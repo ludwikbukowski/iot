@@ -278,7 +278,7 @@ unregister_handler_fun(HandlerName, Handlers) ->
 %% Special Handlers for Pubsub server responses
 
 % Check if response is good
-publish_content_handler( Id) ->
+publish_content_handler(Id) ->
   fun(Stanza, State = #connection_state{notes = Notes}) ->
     case escalus_pred:is_iq_result(Stanza) of
       true ->

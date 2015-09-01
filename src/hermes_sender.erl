@@ -71,7 +71,7 @@ format_and_send(Connection) ->
         {ok, msg} ->
           ?CONNECTION_S:send_data(Connection, FormatedList);
         {ok,_} ->
-     ok   % ?CONNECTION_S:publish_content(Connection, FormatedList)
+        ?CONNECTION_S:publish_content(Connection, FormatedList)
       end
   end.
 
