@@ -1,1 +1,1 @@
-./_build/default/rel/iot/bin/iot
+~/Intel/iot/_build/default/rel/iot/bin/iot

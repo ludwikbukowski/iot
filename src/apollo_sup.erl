@@ -27,12 +27,12 @@ init([]) ->
   % First, ask Connection_Server for Time
   case application:get_env(iot,refresh_time) of
     {ok, true} ->
-    connection_server:save_time(eros);
+    connection_server:save_time();
     _ ->
       ok
   end,
 %%   dbg:tracer(),dbg:tp(connection_server, handle_info,x),dbg:p(all,c),
-  connection_server:create_node(eros),
+  connection_server:create_node(),
   {ok, { {one_for_one, 2, 2},
     [
       {calliope,{driver_manager,start_link,[[]]},permanent,5000,worker,[driver_manager]},         % Muse of poetry; Responsibility: write data from sensor to own state

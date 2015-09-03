@@ -36,8 +36,36 @@ start_link() ->
 
 init(_) ->
   process_flag(trap_exit, true),
-  self() ! connect_to_mongoos,
-  {ok, #connection_state{client = not_connected, publisher_index = 0, handlers = dict:new(), notes = dict:new()}}.
+  {ok, Username} = application:get_env(iot,username),
+  {ok, Password} = application:get_env(iot,password),
+  {ok, Domain} = application:get_env(iot,domain),
+  {ok, Host} = application:get_env(iot,host),
+  State = #connection_state{client =  not_connected, publisher_index =  0, handlers = dict:new(), notes = dict:new()},
+  Fun = fun(Resource) ->
+    Cfg = user_spec(Username, Domain, Host, Password, Resource),
+    MergedConf = merge_props([], Cfg),
+    case escalus_connection:start(MergedConf) of
+      {ok, Client, _, _} ->
+        send_presence_available(Client),
+        Stanza = escalus:wait_for_stanza(Client),
+         case escalus_pred:is_presence(Stanza) of
+            true -> {true, Client};
+
+            Some ->
+              {false,{connection_wrong_receive, Some}}
+          end;
+      Other ->
+        {false,{cannot_connect, Other}}
+    end
+  end,
+  ConnectionCreatedList = lists:map(Fun, ?CONNECTION_LIST),
+  ConnectionErrors = lists:filtermap(fun({false, Reason}) -> {true, Reason};(_) -> false end, ConnectionCreatedList),
+  if length(ConnectionErrors) > 0 ->
+    {stop, ConnectionErrors};
+    true ->
+      ConnectionList = lists:filtermap(fun({false, _}) -> false;(ConnectionCreated) -> ConnectionCreated end, ConnectionCreatedList),
+      {ok, State#connection_state{client = ConnectionList}}
+end.
 
 % Api
 
@@ -86,16 +114,18 @@ handle_call({createnode, NodeName}, _, #connection_state{client = [Client | _], 
 handle_call({publishcontent, Content}, _, State = #connection_state{client = ClientList, publisher_index =  I, handlers = Handlers, notes = Notes}) ->
   FullJid = get_bare_jid(),
   Id = ?ID_GENERATE(),
-  Client = lists:nth(I,ClientList),
-  NewNotes = dict:append(Id, publishcontent, Notes),
-  H = publish_content_handler(Id),
-  NewHandlers = register_handler_fun(Id, H, Handlers),
-  pubsub_tools:publish_content(?NODE_NAME, Id, ?DEST_ADDR, FullJid, Client, Content),
   NewIndex  = (I+1) rem length(ClientList),
   FixedIndex = if NewIndex ==0 ->  1;
     true -> NewIndex
   end,
-  NewState = State#connection_state{publisher_index = FixedIndex, handlers = NewHandlers, notes = NewNotes},
+  Client = lists:nth(FixedIndex,ClientList),
+  NewNotes = dict:append(Id, publishcontent, Notes),
+  H = publish_content_handler(Id),
+  NewHandlers = register_handler_fun(Id, H, Handlers),
+  pubsub_tools:publish_content(?NODE_NAME, Id, ?DEST_ADDR, FullJid, Client, Content),
+  NewState = State#connection_state{publisher_index = FixedIndex
+                                    ,handlers = NewHandlers, notes = NewNotes
+  },
   {reply, ok, NewState};
 
 
@@ -297,7 +327,7 @@ unregister_handler_fun(HandlerName, Handlers) ->
 
 % Check if response is good
 publish_content_handler(Id) ->
-  fun(Stanza, State = #connection_state{notes = Notes}) ->
+  fun(Stanza, State = #connection_state{handlers= Handlers,notes = Notes}) ->
     case escalus_pred:is_iq_result(Stanza) of
       true ->
         case Stanza of
@@ -310,9 +340,10 @@ publish_content_handler(Id) ->
             my_error_logger:log_error("I got result without request!~n"),
           State;
           _ ->
-%%             io:format("all is ok!~n"),
-            dict:erase(Id, Notes),
-            State
+%%              io:format("all is ok!~n"),
+            NewNotes = dict:erase(Id, Notes),
+            NewHandlers = dict:erase(Id, Handlers),
+            State#connection_state{notes = NewNotes, handlers = NewHandlers}
         end;
       _ ->
 %%         io:format("wrong Id:~p and stanza ~p~n",[Id,Stanza]),

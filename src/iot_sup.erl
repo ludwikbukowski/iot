@@ -27,7 +27,7 @@ start_link() ->
 init([]) ->
     {ok, { {rest_for_one, 2, 2},
         [
-            {eros,{connection_server,start_link,[eros]},permanent,5000,worker,[connection_server]},      % The Oldest Ares children, his responsibility is to send almost all mongoose requests
+            {ares_server,{connection_server,start_link,[]},permanent,5000,worker,[connection_server]},      % The Oldest Ares children, his responsibility is to send almost all mongoose requests
             {apollo_supervisor,{apollo_sup,start_link,[]},permanent,5000,supervisor,[apollo_sup]},
             {hermes_sender,{hermes_sender,start_link,[]}, transient, 5000, worker, [hermes_sender]}
         ]
