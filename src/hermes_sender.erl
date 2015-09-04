@@ -12,7 +12,7 @@
 -define(CONNECTION_S, connection_server).
 -define(SLEEP_TIME, 100).     %% 10 Hz
 -define(DATA_PORTION, 1).
--define(ID, "01"). %% ID of raspberrypi
+-define(ID(), case application:get_env(iot,id) of {ok, ID} -> ID;_ -> "unknown" end ). %% ID of raspberrypi
 -define(NAME, hermes_sender).
 -define(CM, 2.56).
 -define(START, 2).
@@ -53,7 +53,7 @@ format_and_send() ->
       AdditionalFilter = fun(Msg) ->
         Distance = inch_to_cm(extract_distance(Msg)),
         Date = extract_time(Msg),
-        integer_to_list(Distance) ++ " " ++ Date ++ " " ++ ?ID
+        integer_to_list(Distance) ++ " " ++ Date ++ " " ++ ?ID()
       end,
       ConsumedList = filter_list(DataList, AdditionalFilter),
       R = io_lib:format("~p",[ConsumedList]),

@@ -20,28 +20,18 @@
 -define(HOST_PI, <<"iot.net">>).
 -define(SOME_NAME, some_name).
 %% API
--export([all/0, groups/0, init_per_suite/1, end_per_suite/1, init_per_group/2, end_per_group/2, start_connection/1, get_time/1, simple_register/1, simple_unregister/1, register_and_receive/1, save_time_to_os/1]).
-groups()->[{time,[sequence],[start_connection, get_time, save_time_to_os]},{handling,[sequence],[simple_register, simple_unregister, register_and_receive]}].
+-export([all/0, groups/0, init_per_suite/1, end_per_suite/1, init_per_group/2, end_per_group/2, get_time/1, simple_register/1, simple_unregister/1, register_and_receive/1, save_time_to_os/1]).
+groups()->[{time,[sequence],[ get_time, save_time_to_os]},{handling,[sequence],[simple_register, simple_unregister, register_and_receive]}].
 all()->[{group, time}, {group, handling}].
 
 
 %% Init
 init_per_suite(Config)->
-  ok = application:start(exml),
-  ok = application:start(escalus),
-  ok = application:start(base16),
-  ok = application:start(sasl),
-  ok = application:start(meck),
-  ok = application:start(iot),
+  application:ensure_all_started(iot),
   Config.
 
 end_per_suite(_)->
-  ok = application:stop(iot),
-  ok = application:stop(meck),
-  ok = application:stop(sasl),
-  ok = application:stop(base16),
-  ok = application:stop(escalus),
-  ok = application:stop(exml).
+  ok = application:stop(iot).
 
 init_per_group(handling, Config) ->
   Config;
@@ -74,12 +64,13 @@ simple_unregister(_) ->
 %% Register handler which sends received Stanza to test proccess
 register_and_receive(_) ->
   Self = self(),
-  Fun =  fun(Stanza) ->
-    Self ! Stanza
+  Fun =  fun(Stanza, Return) ->
+    Self ! Stanza,
+    Return
   end,
   registered = ?CONNECTION_S:register_handler(?SOME_NAME, Fun),
   ExampleStanza = escalus_stanza:presence(<<"available">>),
-  ?CONNECTION_S ! {stanza, ok, ExampleStanza},                            %% Simulate XMPP Msg from server
+  ares_server ! {stanza, ok, ExampleStanza},                            %% Simulate XMPP Msg from server
   receive
     Msg ->
       case escalus_pred:is_presence(Msg) of
@@ -88,15 +79,9 @@ register_and_receive(_) ->
           unregistered = ?CONNECTION_S:unregister_handler(?SOME_NAME);
       _ ->
           erlang:error(wrong_stanza)
-      end;
-    _ ->
-      erlang:error(wrong_receive)
+      end
   end.
 
-
-
-start_connection(_) ->
-  connected = ?MANAGER_S:connect_to_mongoose().
 
 
 get_time(_) ->

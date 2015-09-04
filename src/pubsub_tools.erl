@@ -54,20 +54,20 @@ wait_for_stanza_and_match_result_iq(Client, Id, DestinationNode) ->
 
 create_node(User, Client, Id, DestinationNodeAddr, DestinationNodeName) ->
   PubSubCreateIq = escalus_pubsub_stanza:create_node_stanza(User, Id, DestinationNodeAddr, DestinationNodeName),
-  escalus_connection:send(Client, PubSubCreateIq).
-%%   case wait_for_stanza_and_match_result_iq(Client, Id, DestinationNodeAddr) of
-%%     {true, _} ->
-%%       created;
-%%     {false, Stanza} ->
-%%       case escalus_pred:is_error(<<"cancel">>, <<"conflict">>, Stanza) of
-%%         true ->
-%%           already_exists;
-%%         false ->
-%%           unknown_error
-%%       end;
-%%     Other ->
-%%       {unknown_bug, Other}
-%%   end.
+  escalus_connection:send(Client, PubSubCreateIq),
+  case wait_for_stanza_and_match_result_iq(Client, Id, DestinationNodeAddr) of
+    {true, _} ->
+      created;
+    {false, Stanza} ->
+      case escalus_pred:is_error(<<"cancel">>, <<"conflict">>, Stanza) of
+        true ->
+          already_exists;
+        false ->
+          unknown_error
+      end;
+    Other ->
+      {unknown_bug, Other}
+  end.
 
 
 

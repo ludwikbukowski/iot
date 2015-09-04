@@ -47,17 +47,12 @@ init(_) ->
     case escalus_connection:start(MergedConf) of
       {ok, Client, _, _} ->
         send_presence_available(Client),
-        Stanza = escalus:wait_for_stanza(Client),
-         case escalus_pred:is_presence(Stanza) of
-            true -> {true, Client};
-
-            Some ->
-              {false,{connection_wrong_receive, Some}}
-          end;
+        {true, Client};
       Other ->
         {false,{cannot_connect, Other}}
     end
   end,
+  try
   ConnectionCreatedList = lists:map(Fun, ?CONNECTION_LIST),
   ConnectionErrors = lists:filtermap(fun({false, Reason}) -> {true, Reason};(_) -> false end, ConnectionCreatedList),
   if length(ConnectionErrors) > 0 ->
@@ -65,7 +60,11 @@ init(_) ->
     true ->
       ConnectionList = lists:filtermap(fun({false, _}) -> false;(ConnectionCreated) -> ConnectionCreated end, ConnectionCreatedList),
       {ok, State#connection_state{client = ConnectionList}}
-end.
+  end
+    catch
+      Error:Reason ->
+        {stop, {cannot_connect, Error, Reason}}
+    end.
 
 % Api
 
@@ -108,8 +107,8 @@ handle_call(stop,_ , State) ->
 handle_call({createnode, NodeName}, _, #connection_state{client = [Client | _], handlers = _, notes = _} = State) ->
   FullJid = get_bare_jid(),
   Id = ?ID_GENERATE(),
-  pubsub_tools:create_node(FullJid, Client, Id, ?DEST_ADDR, NodeName),
-  {reply, ok, State};
+  Ret = pubsub_tools:create_node(FullJid, Client, Id, ?DEST_ADDR, NodeName),
+  {reply, Ret, State};
 
 handle_call({publishcontent, Content}, _, State = #connection_state{client = ClientList, publisher_index =  I, handlers = Handlers, notes = Notes}) ->
   FullJid = get_bare_jid(),
@@ -175,39 +174,6 @@ handle_call(save_time, _, State = #connection_state{client = [Client | _]}) ->
       {reply, connection_timeout, State}
   end.
 
-handle_info(connect_to_mongoose, State) ->
-  {ok, Username} = application:get_env(iot,username),
-  {ok, Password} = application:get_env(iot,password),
-  {ok, Domain} = application:get_env(iot,domain),
-  {ok, Host} = application:get_env(iot,host),
-  Fun = fun(Resource) ->
-  Cfg = user_spec(Username, Domain, Host, Password, Resource),
-  MergedConf = merge_props([], Cfg),
-  case escalus_connection:start(MergedConf) of
-    {ok, Client, _, _} ->
-      send_presence_available(Client),
-      receive
-        {stanza, _, Stanza} -> case escalus_pred:is_presence(Stanza) of
-                                 true -> {true, Client};
-
-                                 Some ->
-                                   {false,{connection_wrong_receive, Some}}
-                               end
-      after ?TIMEOUT_MONGOOSE ->
-        {false,connection_timeout}
-      end;
-    Other ->
-      {false,{cannot_connect, Other}}
-        end
-    end,
-    ConnectionCreatedList = lists:map(Fun, ?CONNECTION_LIST),
-    ConnectionErrors = lists:filtermap(fun({false, Reason}) -> {true, Reason};(_) -> false end, ConnectionCreatedList),
-    if length(ConnectionErrors) > 0 ->
-      {stop, ConnectionErrors, State};
-      true ->
-    ConnectionList = lists:filtermap(fun({false, _}) -> false;(ConnectionCreated) -> ConnectionCreated end, ConnectionCreatedList),
-        {noreply, State#connection_state{client = ConnectionList}}
-      end;
 
 handle_info({stanza, _, Stanza}, State = #connection_state{}) ->
   NewState = handle_stanza(Stanza, State),                      %%I Should restore it somewhere

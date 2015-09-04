@@ -11,10 +11,11 @@
     escalus
    ]},
   {env,[
-   {mocked,false},
-   {refresh_time,true},
+   {mocked,true},
+   {refresh_time,false},
    {username,<<"raspberrypi">>},
    {sending_fun,msg},
+   {id,"01"},
    {password,<<"raspberrypi">>},
    {domain,<<"iot.net">>},
    {host,<<"iot.net">>},  %% Need to add host to /etc/hosts

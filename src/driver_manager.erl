@@ -32,7 +32,6 @@ init(_) ->
   {ok, []}.
 
 
-
 %% Api
 -spec open_port(server_name(), sensor_type()) -> {reply, {ok,pid()}, any()} | {reply, unknown_option, any()}.
 open_port(Name, Option) ->
@@ -65,9 +64,6 @@ remove_data(Last) ->
 -spec connect_to_mongoose() -> 'connected'.
 connect_to_mongoose() ->
   gen_server:call(?NAME, connect).
-
-
-
 
 
 
