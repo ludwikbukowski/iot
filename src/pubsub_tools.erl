@@ -72,9 +72,9 @@ create_node(User, Client, Id, DestinationNodeAddr, DestinationNodeName) ->
 
 
 %% publish items witn contents specifying which sample content to use.
-publish_content(DestinationTopicName, Id, DestinationNode, User, Client, {SensorData, Date, Id}) ->
+publish_content(DestinationTopicName, Id, DestinationNode, User, Client, {SensorData, Date, PiId}) ->
   %% Prepare body of publish
-  Entry = escalus_pubsub_stanza:publish_entry(prepare_body_for_publish( SensorData, Date, Id)),
+  Entry = escalus_pubsub_stanza:publish_entry(prepare_body_for_publish( SensorData, Date, PiId)),
   Content = escalus_pubsub_stanza:publish_item(Id, Entry),
   PublishToNodeIq = escalus_pubsub_stanza:publish_node_with_content_stanza(DestinationTopicName, Content),
   Stanza = escalus_pubsub_stanza:iq_with_id(set, Id, DestinationNode, User, [escalus_pubsub_stanza:pubsub_stanza(PublishToNodeIq, ?NS_PUBSUB)]),
