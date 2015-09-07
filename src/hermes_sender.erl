@@ -53,7 +53,7 @@ format_and_send() ->
       AdditionalFilter = fun(Msg) ->
         Distance = inch_to_cm(extract_distance(Msg)),
         Date = extract_time(Msg),
-        {Distance, Date, ?ID()}
+        {integer_to_list(Distance), Date, ?ID()}
       end,
       ConsumedList = filter_list(DataList, AdditionalFilter),
       case application:get_env(iot, sending_fun) of
@@ -63,7 +63,7 @@ format_and_send() ->
           FormatedList = lists:flatten(R),
           ?CONNECTION_S:send_data(FormatedList);
         {ok,_} ->
-        ?CONNECTION_S:publish_content(ConsumedList)
+        ?CONNECTION_S:publish_content(hd(ConsumedList))
       end
   end.
 
