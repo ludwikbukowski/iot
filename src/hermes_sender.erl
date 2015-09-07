@@ -53,25 +53,22 @@ format_and_send() ->
       AdditionalFilter = fun(Msg) ->
         Distance = inch_to_cm(extract_distance(Msg)),
         Date = extract_time(Msg),
-        integer_to_list(Distance) ++ " " ++ Date ++ " " ++ ?ID()
+        {Distance, Date, ?ID()}
       end,
       ConsumedList = filter_list(DataList, AdditionalFilter),
-      R = io_lib:format("~p",[ConsumedList]),
-      FormatedList = lists:flatten(R),
       case application:get_env(iot, sending_fun) of
         {ok, msg} ->
-          ?CONNECTION_S:send_data( FormatedList);
+          %%         integer_to_list(Distance) ++ " " ++ Date ++ " " ++ ?ID()
+          R = io_lib:format("~p",[ConsumedList]),
+          FormatedList = lists:flatten(R),
+          ?CONNECTION_S:send_data(FormatedList);
         {ok,_} ->
-        ?CONNECTION_S:publish_content( FormatedList)
+        ?CONNECTION_S:publish_content(ConsumedList)
       end
   end.
 
 
 
-
-%% For example linear regression for bunch of measures
-consume(Data) ->
-  Data.
 
 filter_list(List, AdditionalFun) ->
   Fun = fun(Tuple) ->

@@ -38,7 +38,7 @@
   subscribe_by_users/3,
   unsubscribe_by_user/3,
   unsubscribe_by_users/3
-  , prepare_body_for_publish/2, subscribe_by_user/4]).
+  , prepare_body_for_publish/3, subscribe_by_user/4]).
 
 %% ----------------------------- HELPER and DIAGNOSTIC functions -----------------------
 %% Note ------ functions in this section are not stanza generating functions but:
@@ -72,9 +72,9 @@ create_node(User, Client, Id, DestinationNodeAddr, DestinationNodeName) ->
 
 
 %% publish items witn contents specifying which sample content to use.
-publish_content(DestinationTopicName, Id, DestinationNode, User, Client, Data) ->
+publish_content(DestinationTopicName, Id, DestinationNode, User, Client, {SensorData, Date, Id}) ->
   %% Prepare body of publish
-  Entry = escalus_pubsub_stanza:publish_entry(prepare_body_for_publish(?TITLE, Data)),
+  Entry = escalus_pubsub_stanza:publish_entry(prepare_body_for_publish( SensorData, Date, Id)),
   Content = escalus_pubsub_stanza:publish_item(Id, Entry),
   PublishToNodeIq = escalus_pubsub_stanza:publish_node_with_content_stanza(DestinationTopicName, Content),
   Stanza = escalus_pubsub_stanza:iq_with_id(set, Id, DestinationNode, User, [escalus_pubsub_stanza:pubsub_stanza(PublishToNodeIq, ?NS_PUBSUB)]),
@@ -267,10 +267,11 @@ delete_node_by_owner(User, NodeName, NodeAddr) ->
 
 
 
-prepare_body_for_publish(Title, Data) ->
+prepare_body_for_publish(Distance, Date, Id) ->
   [
-    #xmlel{name = <<"title">>, children  = [ #xmlcdata{content=[Title]}]},
-    #xmlel{name = <<"data">>, children = [ #xmlcdata{content=[Data]}]}
+    #xmlel{name = <<"distance">>, children = [ #xmlcdata{content=[Distance]}]},
+    #xmlel{name = <<"date">>, children = [ #xmlcdata{content=[Date]}]},
+    #xmlel{name = <<"id">>, children = [ #xmlcdata{content=[Id]}]}
   ].
 
 
