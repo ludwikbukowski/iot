@@ -61,7 +61,7 @@ format_and_send() ->
           %%         integer_to_list(Distance) ++ " " ++ Date ++ " " ++ ?ID()
           R = io_lib:format("~p",[ConsumedList]),
           FormatedList = lists:flatten(R),
-          ?CONNECTION_S:send_data(FormatedList);
+          ?CONNECTION_S:send_data(hd(FormatedList));
         {ok,_} ->
         ?CONNECTION_S:publish_content(hd(ConsumedList))
       end
