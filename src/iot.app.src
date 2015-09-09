@@ -11,10 +11,10 @@
     escalus
    ]},
   {env,[
-   {mocked,true},
-   {refresh_time,false},
+   {mocked,false},
+   {refresh_time,true},
    {username,<<"raspberrypi">>},
-   {sending_fun,msg},
+   {sending_fun,publish},
    {id,"01"},
    {password,<<"raspberrypi">>},
    {domain,<<"iot.net">>},

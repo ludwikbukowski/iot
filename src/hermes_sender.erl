@@ -59,9 +59,9 @@ format_and_send() ->
       case application:get_env(iot, sending_fun) of
         {ok, msg} ->
           %%         integer_to_list(Distance) ++ " " ++ Date ++ " " ++ ?ID()
-          R = io_lib:format("~p",[ConsumedList]),
+          R = io_lib:format("~p",[hd(ConsumedList)]),
           FormatedList = lists:flatten(R),
-          ?CONNECTION_S:send_data(hd(FormatedList));
+          ?CONNECTION_S:send_data(FormatedList);
         {ok,_} ->
         ?CONNECTION_S:publish_content(hd(ConsumedList))
       end
