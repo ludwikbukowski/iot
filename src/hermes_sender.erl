@@ -59,14 +59,17 @@ format_and_send() ->
       case application:get_env(iot, sending_fun) of
         {ok, msg} ->
           %%         integer_to_list(Distance) ++ " " ++ Date ++ " " ++ ?ID()
-          R = io_lib:format("~p",[hd(ConsumedList)]),
-          FormatedList = lists:flatten(R),
-          ?CONNECTION_S:send_data(FormatedList);
+          ?CONNECTION_S:send_data(format_me(hd(ConsumedList)));
         {ok,_} ->
         ?CONNECTION_S:publish_content(hd(ConsumedList))
       end
   end.
 
+format_me(Tuple) ->
+  {Distance, Date, Id} = Tuple,
+  Whole = Distance ++" "++ Date ++" "++ Id,
+  R = io_lib:format("~p",[Whole]),
+  FormatedList = lists:flatten([R]).
 
 
 

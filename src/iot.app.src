@@ -14,7 +14,7 @@
    {mocked,false},
    {refresh_time,true},
    {username,<<"raspberrypi">>},
-   {sending_fun,publish},
+   {sending_fun,msg},
    {id,"01"},
    {password,<<"raspberrypi">>},
    {domain,<<"iot.net">>},
