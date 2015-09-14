@@ -12,7 +12,7 @@
 -define(CONNECTION_S, connection_server).
 -define(SLEEP_TIME, 100).     %% 10 Hz
 -define(DATA_PORTION, 1).
--define(ID(), case application:get_env(iot,id) of {ok, ID} -> ID;_ -> "unknown" end ). %% ID of raspberrypi
+-define(ID(), case application:get_env(iot,xy) of {ok, ID} -> ID;_ -> "unknown" end ). %% ID of raspberrypi
 -define(NAME, hermes_sender).
 -define(CM, 2.56).
 -define(START, 2).

@@ -13,10 +13,10 @@
   {env,[
    {mocked,false},
    {refresh_time,true},
-   {username,<<"raspberrypi">>},
+   {username,<<"raspberrypi2">>},
    {sending_fun,msg},
-   {id,"01"},
-   {password,<<"raspberrypi">>},
+   {xy,"55,19"},
+   {password,<<"raspberrypi2">>},
    {domain,<<"iot.net">>},
    {host,<<"iot.net">>},  %% Need to add host to /etc/hosts
    {resource,<<"pi">>}
